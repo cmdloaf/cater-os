@@ -262,7 +262,7 @@ export default function CreateEventPage() {
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
-          Enter details once — CaterOS generates the quotation, contract, event
+          Enter details once — Vero generates the quotation, contract, event
           order & operations checklist.
         </p>
       </div>

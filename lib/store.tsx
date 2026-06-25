@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * CaterOS data store — THE SEAM for a future backend.
+ * Vero data store — THE SEAM for a future backend.
  *
  * Today this provider seeds from `SEED_EVENTS` and persists to localStorage.
  * Every component reads/writes events ONLY through the methods exposed here

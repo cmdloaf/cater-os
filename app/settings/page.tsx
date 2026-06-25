@@ -84,10 +84,10 @@ export default function SettingsPage() {
         <TabsContent value="company">
           <Card className="p-6">
             <div className="grid gap-5 sm:grid-cols-2">
-              <FieldRow label="Company Name" defaultValue="CaterOS Catering" />
+              <FieldRow label="Company Name" defaultValue="Vero Catering" />
               <FieldRow label="Business Type" defaultValue="Full-Service Catering" />
               <FieldRow label="Contact Number" defaultValue="+63 2 8555 0100" />
-              <FieldRow label="Email" defaultValue="hello@cateros.ph" type="email" />
+              <FieldRow label="Email" defaultValue="hello@vero.ph" type="email" />
               <div className="sm:col-span-2">
                 <FieldRow
                   label="Business Address"
@@ -119,7 +119,7 @@ export default function SettingsPage() {
             </div>
             <Separator className="my-6" />
             <div className="grid gap-5 sm:grid-cols-2">
-              <FieldRow label="Billing Email" defaultValue="billing@cateros.ph" />
+              <FieldRow label="Billing Email" defaultValue="billing@vero.ph" />
               <FieldRow label="TIN" defaultValue="009-123-456-000" />
             </div>
             <Button

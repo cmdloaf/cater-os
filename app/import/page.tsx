@@ -135,7 +135,7 @@ export default function ImportPage() {
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
           Onboard your catering business in minutes. Upload your existing files
-          and CaterOS detects packages, menus, add-ons and templates
+          and Vero detects packages, menus, add-ons and templates
           automatically.
         </p>
       </div>
@@ -244,7 +244,7 @@ export default function ImportPage() {
           <DialogHeader>
             <DialogTitle>Review detected data</DialogTitle>
             <DialogDescription>
-              Confirm the records below to import them into your CaterOS
+              Confirm the records below to import them into your Vero
               workspace. You can edit everything afterwards.
             </DialogDescription>
           </DialogHeader>
@@ -271,7 +271,7 @@ export default function ImportPage() {
                 setConfirmOpen(false);
                 toast.success("Data imported", {
                   description:
-                    "Your packages, menus and templates are now available across CaterOS.",
+                    "Your packages, menus and templates are now available across Vero.",
                 });
               }}
             >

@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CaterOS — Catering Operations Platform",
+  title: "Vero — Catering Operations Platform",
   description:
     "One Event Record. Every document generated automatically — quotation, contract, event order and operations checklist.",
 };

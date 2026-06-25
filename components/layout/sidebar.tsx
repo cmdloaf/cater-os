@@ -55,7 +55,7 @@ export function Sidebar() {
           <ChefHat className="h-5 w-5" />
         </div>
         <div className={cn("leading-tight", labelClass)}>
-          <div className="text-sm font-semibold tracking-tight">CaterOS</div>
+          <div className="text-sm font-semibold tracking-tight">Vero</div>
           <div className="text-[11px] text-white/50">Catering Operations</div>
         </div>
         <button

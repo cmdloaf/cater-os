@@ -1,5 +1,5 @@
 /**
- * Domain types for CaterOS.
+ * Domain types for Vero.
  *
  * The `EventRecord` is the single source of truth. Every generated document
  * (quotation, contract, event order, operations checklist) is derived from it
@@ -123,6 +123,20 @@ export interface DocGroup {
   items: string[];
 }
 
+/** An editable "label : value" row (document header details, signatories). */
+export interface DocField {
+  id: string;
+  label: string;
+  value: string;
+}
+
+/** An editable headed paragraph (contract terms, remarks). */
+export interface DocSection {
+  id: string;
+  heading: string;
+  body: string;
+}
+
 /** Editable, persisted Quotation document — seeded from the Event Record. */
 export interface QuotationDoc {
   companyName: string;
@@ -136,6 +150,28 @@ export interface QuotationDoc {
   meals: DocGroup[];
   inclusions: string[];
   notes: string;
+  footerContact: string;
+}
+
+/** Editable, persisted Event Order document — seeded from the Event Record. */
+export interface EventOrderDoc {
+  title: string;
+  fields: DocField[];
+  remarks: string[];
+  particulars: DocLine[];
+  totals: DocLine[];
+}
+
+/** Editable, persisted Contract document — seeded from the Event Record. */
+export interface ContractDoc {
+  title: string;
+  intro: string;
+  fields: DocField[];
+  figures: DocLine[];
+  inclusions: DocGroup[];
+  terms: DocSection[];
+  paymentSchedule: DocLine[];
+  signatories: DocField[];
   footerContact: string;
 }
 
@@ -155,6 +191,10 @@ export interface EventRecord {
   operations?: OperationsChecklist;
   /** Lazily seeded the first time the Quotation document is edited. */
   quotation?: QuotationDoc;
+  /** Lazily seeded the first time the Contract document is edited. */
+  contract?: ContractDoc;
+  /** Lazily seeded the first time the Event Order document is edited. */
+  eventOrder?: EventOrderDoc;
 }
 
 /** Shape used by the create-event wizard before an id/timestamps exist. */

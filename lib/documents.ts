@@ -1,6 +1,10 @@
 import type {
-  DocLine,
+  ContractDoc,
+  DocField,
   DocGroup,
+  DocLine,
+  DocSection,
+  EventOrderDoc,
   EventRecord,
   OperationsChecklist,
   OpsItem,
@@ -147,9 +151,9 @@ export function seedOperations(record: EventRecord): OperationsChecklist {
 
 /** Caterer identity used to seed document headers/footers (editable after). */
 export const COMPANY = {
-  name: "CaterOS Catering",
+  name: "Vero Catering",
   tagline: "Catering & Events",
-  contact: "(0956) 618 8519 · hello@cateros.ph · CaterOS Catering & Events",
+  contact: "(0956) 618 8519 · hello@vero.ph · Vero Catering & Events",
 };
 
 const DEFAULT_INCLUSIONS = [
@@ -238,4 +242,175 @@ export function seedQuotation(record: EventRecord): QuotationDoc {
     notes,
     footerContact: COMPANY.contact,
   };
+}
+
+function field(label: string, value: string): DocField {
+  return { id: uid("fld"), label, value };
+}
+
+function section(heading: string, body: string): DocSection {
+  return { id: uid("sec"), heading, body };
+}
+
+/**
+ * Build the editable Contract document from the Event Record. Seeds figures
+ * from `deriveQuote` and carries standard catering-contract clauses as default,
+ * editable copy. Used by the Contract tab and its Reset.
+ */
+export function seedContract(record: EventRecord): ContractDoc {
+  const q = deriveQuote(record);
+  const { pax, serviceStyle } = record.event;
+  const { commercial } = record;
+  const balance = q.total - record.reservationFee;
+
+  const figures: DocLine[] = [
+    line(commercial.packageName || "Catering Package", q.packageLine.amount, "line", {
+      detail: `${pax} pax × ${formatCurrency(commercial.budgetPerHead)} / head`,
+    }),
+    ...commercial.addOns.map((a) => line(a.name, a.price, "line")),
+    line(`Service Charge (${Math.round(SERVICE_CHARGE_RATE * 100)}%)`, q.serviceCharge, "service"),
+    line(`VAT (${Math.round(VAT_RATE * 100)}%)`, q.vat, "vat"),
+    line("Discount", -q.discount, "discount"),
+  ];
+
+  const inclusions: DocGroup[] = [
+    {
+      id: uid("grp"),
+      title: "Dining",
+      items: [
+        "A signature buffet menu of your choice",
+        "Elegantly skirted buffet set-up with well-lit buffet lamps",
+        "Customer-oriented wait staff to assist and serve your guests",
+        "Complete use of flatware, glassware and dinnerware",
+        "Free-flowing iced tea",
+        "Purified drinking water and ice for drinks",
+      ],
+    },
+    {
+      id: uid("grp"),
+      title: "Décor",
+      items: [
+        "Custom floral centerpieces to suit the mood of your event",
+        "Dressed tables with your linen of choice",
+        "Monobloc chairs with floor-length seat covers",
+      ],
+    },
+  ];
+
+  const terms: DocSection[] = [
+    section(
+      "Menu Requirements",
+      "Menu requirements are to be followed as discussed and agreed upon with the client."
+    ),
+    section(
+      "Attendance of Guests",
+      "The guaranteed attendance must be confirmed at least seven (7) days before the event. Charges are based on the guaranteed count; the Caterer cannot guarantee adequate food for attendance exceeding the confirmed number."
+    ),
+    section(
+      "Payment",
+      `A reservation fee of ${formatCurrency(record.reservationFee)} is required to reserve the date and is non-refundable but deductible from the total contract amount. The remaining balance of ${formatCurrency(balance)} is due no later than seven (7) days before the event.`
+    ),
+    section(
+      "Cancellation / Postponement",
+      "The client must inform the Caterer of any cancellation or postponement in writing no later than seven (7) days before the event, stating the reason. The reservation fee is transferable to a rescheduled date within six (6) months, subject to availability."
+    ),
+    section(
+      "Service Time / Overtime",
+      "Standard service time is limited to four (4) hours. An overtime fee of ₱3,000 per hour (with wait staff) applies beyond the agreed time and is payable immediately after the event."
+    ),
+    section(
+      "Indemnity",
+      "The client is responsible for the safety and security of guests' personal property. The client shall pay for the cost of broken, damaged or lost equipment, furniture, glassware or utensils based on market price."
+    ),
+    section(
+      "Force Majeure",
+      "The Caterer shall not be liable for any failure or delay caused by force majeure, including fire, earthquake, floods, typhoons, acts of God, civil disturbance, or other causes beyond its reasonable control."
+    ),
+  ];
+
+  const paymentSchedule: DocLine[] = [
+    line("Reservation Payment", record.reservationFee, "line", {
+      detail: "Upon signing",
+    }),
+    line("Full Payment", balance, "line", {
+      detail: "7 days before the event",
+    }),
+  ];
+
+  const signatories: DocField[] = [
+    field(`Authorized Representative, ${COMPANY.name}`, ""),
+    field(`Client — ${record.client.clientName}`, record.client.contactPerson),
+  ];
+
+  return {
+    title: "CATERING CONTRACT",
+    intro: `This Catering Service Agreement is entered into between ${COMPANY.name} ("the Caterer") and ${record.client.clientName} ("the Client") for the event detailed below.`,
+    fields: [
+      field("Title of Event", record.eventName),
+      field("Guaranteed Number of Pax", `${pax}`),
+      field("Type of Service and Food", `${serviceStyle} Style of Service`),
+      field("Date of Event", formatDate(record.event.eventDate)),
+      field("Event Service Hours", record.event.eventTime || "—"),
+      field(
+        "Venue of the Event",
+        [record.event.venue, record.event.venueAddress].filter(Boolean).join(", ")
+      ),
+    ],
+    figures,
+    inclusions,
+    terms,
+    paymentSchedule,
+    signatories,
+    footerContact: COMPANY.contact,
+  };
+}
+
+/**
+ * Build the editable Event Order document from the Event Record. Seeds the
+ * particulars from the menu and the totals from `deriveQuote`. Used by the
+ * Event Order tab and its Reset.
+ */
+export function seedEventOrder(record: EventRecord): EventOrderDoc {
+  const q = deriveQuote(record);
+  const { pax } = record.event;
+  const { commercial } = record;
+
+  const fields: DocField[] = [
+    field("Company / Client Name", record.client.clientName),
+    field("Function / Event Title", record.eventName),
+    field("Function / Event Date", formatDate(record.event.eventDate)),
+    field("Call Time", record.event.eventTime || "—"),
+    field("Number of Guest", `${pax} pax`),
+    field("Outlet", ""),
+    field(
+      "Function Venue",
+      [record.event.venue, record.event.venueAddress].filter(Boolean).join(", ")
+    ),
+    field("Contact Person", record.client.contactPerson),
+  ];
+
+  const remarks = [
+    `Package: ${commercial.packageName} (${formatCurrency(commercial.budgetPerHead)}/head)`,
+    "Catering Event",
+    "Standard buffet set-up is up to 4 hours. Extension per hour is ₱3,000 with wait staff.",
+    record.order.theme ? `Theme / Motif: ${record.order.theme}` : "",
+    commercial.specialRequests,
+  ].filter(Boolean);
+
+  const particulars: DocLine[] = [
+    line(commercial.packageName || "Catering Package", q.packageLine.amount, "line", {
+      detail: `${pax} pax × ${formatCurrency(commercial.budgetPerHead)} / head`,
+    }),
+    ...commercial.addOns.map((a) => line(a.name, a.price, "line")),
+    ...commercial.menu.map((m) => line(m.name, 0, "line")),
+  ];
+
+  const totals: DocLine[] = [
+    line("Mobilization", commercial.transportationFee, "line"),
+    line(`Service Charge (${Math.round(SERVICE_CHARGE_RATE * 100)}%)`, q.serviceCharge, "service"),
+    line(`VAT (${Math.round(VAT_RATE * 100)}%)`, q.vat, "vat"),
+    line("Discount", -q.discount, "discount"),
+  ];
+
+  return { title: "EVENT ORDER", fields, remarks, particulars, totals };
 }
