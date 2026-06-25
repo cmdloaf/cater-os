@@ -62,6 +62,9 @@
     left: 0;
     top: 0;
     width: 100%;
+    /* Render background colors (dark charges band, TOTAL band) in the PDF. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .no-print {
     display: none !important;

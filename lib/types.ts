@@ -99,6 +99,46 @@ export interface OperationsChecklist {
   notes: string;
 }
 
+/* ----------------------------- Editable documents ---------------------------- */
+
+/** What a charge line contributes to the totals strip. */
+export type ChargeKind = "line" | "discount" | "vat" | "service";
+
+/** An editable money line (charges, fees, totals). `struckAmount` shows an
+ * original price struck through (e.g. a discounted/waived line). */
+export interface DocLine {
+  id: string;
+  description: string;
+  detail?: string;
+  amount: number;
+  struckAmount?: number;
+  note?: string;
+  kind: ChargeKind;
+}
+
+/** An editable titled list (menu/package breakdown, inclusions groups). */
+export interface DocGroup {
+  id: string;
+  title: string;
+  items: string[];
+}
+
+/** Editable, persisted Quotation document — seeded from the Event Record. */
+export interface QuotationDoc {
+  companyName: string;
+  companyTagline: string;
+  preparedFor: string;
+  dateLabel: string;
+  paxLabel: string;
+  termsLabel: string;
+  venueLabel: string;
+  charges: DocLine[];
+  meals: DocGroup[];
+  inclusions: string[];
+  notes: string;
+  footerContact: string;
+}
+
 export interface EventRecord {
   id: string;
   eventName: string;
@@ -113,6 +153,8 @@ export interface EventRecord {
   reservationFee: number;
   /** Lazily seeded the first time the Checklist tab is edited. */
   operations?: OperationsChecklist;
+  /** Lazily seeded the first time the Quotation document is edited. */
+  quotation?: QuotationDoc;
 }
 
 /** Shape used by the create-event wizard before an id/timestamps exist. */

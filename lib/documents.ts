@@ -1,5 +1,13 @@
-import type { EventRecord, OperationsChecklist, OpsItem } from "./types";
-import { deriveQuote } from "./pricing";
+import type {
+  DocLine,
+  DocGroup,
+  EventRecord,
+  OperationsChecklist,
+  OpsItem,
+  QuotationDoc,
+} from "./types";
+import { deriveQuote, SERVICE_CHARGE_RATE, VAT_RATE } from "./pricing";
+import { formatCurrency, formatDate } from "./utils";
 
 /**
  * Pure derivations: Event Record -> operational document data.
@@ -133,4 +141,101 @@ export function seedOperations(record: EventRecord): OperationsChecklist {
   ];
 
   return { timeline, foodPrep, equipment, addons, logistics, notes: "" };
+}
+
+/* ------------------------------- Documents -------------------------------- */
+
+/** Caterer identity used to seed document headers/footers (editable after). */
+export const COMPANY = {
+  name: "CaterOS Catering",
+  tagline: "Catering & Events",
+  contact: "(0956) 618 8519 · hello@cateros.ph · CaterOS Catering & Events",
+};
+
+const DEFAULT_INCLUSIONS = [
+  "Uniformed Wait Staff",
+  "Skirted Buffet Setup",
+  "Tables & Chairs",
+  "Complete Dinnerware & Cutlery",
+  "Glassware",
+  "Free-flowing Iced Tea",
+  "Water Station",
+];
+
+let docSeq = 0;
+function uid(prefix: string): string {
+  docSeq += 1;
+  return `${prefix}-${Date.now().toString(36)}-${docSeq}`;
+}
+
+function line(
+  description: string,
+  amount: number,
+  kind: DocLine["kind"] = "line",
+  extra: Partial<DocLine> = {}
+): DocLine {
+  return { id: uid("ln"), description, amount, kind, ...extra };
+}
+
+/**
+ * Build the editable Quotation document from the Event Record. Seeds charges
+ * from `deriveQuote` so the document opens matching the live totals; the user
+ * then edits freely (document-local). Used by the Quotation tab and its Reset.
+ */
+export function seedQuotation(record: EventRecord): QuotationDoc {
+  const q = deriveQuote(record);
+  const { pax } = record.event;
+  const { commercial } = record;
+
+  const charges: DocLine[] = [
+    line(commercial.packageName || "Catering Package", q.packageLine.amount, "line", {
+      detail: `${pax} pax × ${formatCurrency(commercial.budgetPerHead)} / head`,
+    }),
+    ...commercial.addOns.map((a) => line(a.name, a.price, "line")),
+  ];
+  if (q.transportationFee > 0) {
+    charges.push(line("Transportation Fee", q.transportationFee, "line"));
+  }
+  charges.push(
+    line(`Service Charge (${Math.round(SERVICE_CHARGE_RATE * 100)}%)`, q.serviceCharge, "service"),
+    line(`VAT (${Math.round(VAT_RATE * 100)}%)`, q.vat, "vat"),
+    line("Discount", -q.discount, "discount")
+  );
+
+  const meals: DocGroup[] = [
+    {
+      id: uid("grp"),
+      title: commercial.packageName || "Menu Inclusions",
+      items: commercial.menu.map((m) => m.name),
+    },
+  ];
+
+  const inclusions = [
+    ...DEFAULT_INCLUSIONS,
+    ...commercial.addOns.map((a) => a.name),
+  ];
+
+  const notes = [
+    "This quotation is valid for 30 days from the date of issuance.",
+    `A reservation fee of ${formatCurrency(record.reservationFee)} confirms your booking.`,
+    commercial.specialRequests ? `Notes: ${commercial.specialRequests}` : "",
+    "We look forward to the opportunity to be of service. Thank you!",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    companyName: COMPANY.name,
+    companyTagline: COMPANY.tagline,
+    preparedFor: record.client.clientName || record.eventName,
+    dateLabel: formatDate(record.event.eventDate),
+    paxLabel: `${pax} PAX`,
+    termsLabel: "30 DAYS",
+    venueLabel: record.event.venue || "",
+    charges,
+    meals,
+    inclusions,
+    notes,
+    footerContact: COMPANY.contact,
+  };
 }

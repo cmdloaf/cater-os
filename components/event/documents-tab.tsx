@@ -28,9 +28,10 @@ import {
 } from "@/components/ui/tabs";
 import { EditSectionSheet, type EditSection } from "./edit-section-sheet";
 import { OperationsTab } from "./operations-tab";
+import { QuotationDocument } from "./quotation-document";
 import { useStore } from "@/lib/store";
 import type { EventRecord } from "@/lib/types";
-import { deriveQuote, SERVICE_CHARGE_RATE, VAT_RATE } from "@/lib/pricing";
+import { deriveQuote } from "@/lib/pricing";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 export function DocumentsTab({ record }: { record: EventRecord }) {
@@ -81,10 +82,9 @@ export function DocumentsTab({ record }: { record: EventRecord }) {
             record={record}
             docName="Quotation"
             onGenerate={() => generatePdf("Quotation")}
-            onEdit={() => setEditing("package")}
             onSend={sendToClient}
           >
-            <QuotationDoc record={record} />
+            <QuotationDocument record={record} />
           </DocLayout>
         </TabsContent>
 
@@ -143,7 +143,7 @@ function DocLayout({
   record: EventRecord;
   docName: string;
   onGenerate: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onSend?: () => void;
   children: React.ReactNode;
 }) {
@@ -170,13 +170,15 @@ function DocLayout({
             <Button className="w-full justify-start" onClick={onGenerate}>
               <RefreshCw className="h-4 w-4" /> Generate / Regenerate
             </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={onEdit}
-            >
-              <Pencil className="h-4 w-4" /> Edit Before Generating
-            </Button>
+            {onEdit && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={onEdit}
+              >
+                <Pencil className="h-4 w-4" /> Edit Before Generating
+              </Button>
+            )}
             <Button
               variant="outline"
               className="w-full justify-start"
@@ -308,165 +310,6 @@ function InfoBlock({
           </div>
         ))}
       </dl>
-    </div>
-  );
-}
-
-/* ------------------------------- Quotation ------------------------------- */
-
-function QuotationDoc({ record }: { record: EventRecord }) {
-  const quote = deriveQuote(record);
-  return (
-    <DocShell>
-      <Letterhead
-        docTitle="Quotation"
-        docNo={`QTN-${record.id.slice(-6).toUpperCase()}`}
-      />
-
-      <div className="grid gap-8 py-6 sm:grid-cols-2">
-        <InfoBlock
-          title="Bill To"
-          rows={[
-            ["Client", record.client.clientName],
-            ["Contact", record.client.contactPerson],
-            ["Mobile", record.client.mobile || "—"],
-            ["Email", record.client.email || "—"],
-          ]}
-        />
-        <InfoBlock
-          title="Event Details"
-          rows={[
-            ["Event", record.eventName],
-            ["Date", formatDate(record.event.eventDate)],
-            ["Time", record.event.eventTime || "—"],
-            ["Venue", record.event.venue],
-            ["Pax", `${record.event.pax} guests`],
-            ["Service", record.event.serviceStyle],
-          ]}
-        />
-      </div>
-
-      <Separator />
-
-      {/* Menu */}
-      <div className="py-6">
-        <div className="mb-3 text-sm font-semibold">
-          {record.commercial.packageName} — Menu Inclusions
-        </div>
-        <div className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
-          {record.commercial.menu.map((m, i) => (
-            <div key={i} className="flex gap-2 text-sm">
-              <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
-                {m.category}
-              </span>
-              <span>{m.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Pricing */}
-      <div className="py-6">
-        <div className="mb-3 text-sm font-semibold">Pricing Breakdown</div>
-        <table className="w-full text-sm">
-          <tbody>
-            <PriceRow
-              label={quote.packageLine.label}
-              detail={quote.packageLine.detail}
-              amount={quote.packageLine.amount}
-            />
-            {quote.addOnLines.map((l, i) => (
-              <PriceRow
-                key={i}
-                label={l.label}
-                detail={l.detail}
-                amount={l.amount}
-              />
-            ))}
-            {quote.transportationFee > 0 && (
-              <PriceRow
-                label="Transportation Fee"
-                detail="Delivery & logistics"
-                amount={quote.transportationFee}
-              />
-            )}
-          </tbody>
-        </table>
-
-        <div className="mt-4 space-y-1.5 border-t pt-4">
-          <Total label="Subtotal" value={quote.subtotal} />
-          <Total
-            label={`Service Charge (${Math.round(SERVICE_CHARGE_RATE * 100)}%)`}
-            value={quote.serviceCharge}
-          />
-          <Total label={`VAT (${Math.round(VAT_RATE * 100)}%)`} value={quote.vat} />
-          {quote.discount > 0 && (
-            <Total label="Discount" value={-quote.discount} />
-          )}
-          <div className="flex items-center justify-between border-t pt-3">
-            <span className="text-base font-semibold">Total Amount</span>
-            <span className="text-xl font-semibold text-primary">
-              {formatCurrency(quote.total)}
-            </span>
-          </div>
-          <div className="text-right text-xs text-muted-foreground">
-            ≈ {formatCurrency(quote.perHead)} per guest
-          </div>
-        </div>
-      </div>
-
-      {record.commercial.specialRequests && (
-        <>
-          <Separator />
-          <div className="py-6">
-            <div className="mb-2 text-sm font-semibold">
-              Notes & Special Requests
-            </div>
-            <p className="whitespace-pre-line text-sm text-muted-foreground">
-              {record.commercial.specialRequests}
-            </p>
-          </div>
-        </>
-      )}
-
-      <div className="mt-2 rounded-lg bg-muted/60 p-4 text-xs text-muted-foreground">
-        This quotation is valid for 30 days. A reservation fee of{" "}
-        {formatCurrency(record.reservationFee)} confirms your booking. Prices are
-        inclusive of service charge and VAT.
-      </div>
-    </DocShell>
-  );
-}
-
-function PriceRow({
-  label,
-  detail,
-  amount,
-}: {
-  label: string;
-  detail: string;
-  amount: number;
-}) {
-  return (
-    <tr className="border-b last:border-0">
-      <td className="py-2.5">
-        <div className="font-medium">{label}</div>
-        <div className="text-xs text-muted-foreground">{detail}</div>
-      </td>
-      <td className="py-2.5 text-right font-medium tabular-nums">
-        {formatCurrency(amount)}
-      </td>
-    </tr>
-  );
-}
-
-function Total({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="tabular-nums">{formatCurrency(value)}</span>
     </div>
   );
 }
