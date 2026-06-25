@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -40,11 +40,19 @@ import type { AddOn, MenuItem, NewEventInput } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
 import { SERVICE_CHARGE_RATE, VAT_RATE } from "@/lib/pricing";
 
-const STEPS = [
+type Variant = "guided" | "express";
+
+const GUIDED_STEPS = [
   { n: 1, label: "Event Info" },
   { n: 2, label: "Catering Details" },
   { n: 3, label: "Review & Save" },
 ];
+const EXPRESS_STEPS = [
+  { n: 1, label: "Event & Catering" },
+  { n: 2, label: "Review & Save" },
+];
+
+const VARIANT_KEY = "vero:wizard-variant";
 
 /** Time options in 30-minute increments, e.g. "12:00 AM" … "11:30 PM". */
 const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
@@ -112,8 +120,33 @@ export default function CreateEventPage() {
   const router = useRouter();
   const { createEvent } = useStore();
   const { packages, addOns: addOnCatalog } = useCatalog();
+  const [variant, setVariant] = useState<Variant>("guided");
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+
+  // Remember the chosen flow per browser.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(VARIANT_KEY) === "express") {
+      setVariant("express");
+    }
+  }, []);
+
+  function chooseVariant(v: Variant) {
+    setVariant(v);
+    setStep(1);
+    try {
+      window.localStorage.setItem(VARIANT_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const steps = variant === "express" ? EXPRESS_STEPS : GUIDED_STEPS;
+  const reviewStep = steps.length;
+  const showInfo = step === 1;
+  const showCatering = variant === "express" ? step === 1 : step === 2;
+  const showReview = step === reviewStep;
   const [form, setForm] = useState<FormState>(() => ({
     ...INITIAL,
     packageName: "",
@@ -249,27 +282,50 @@ export default function CreateEventPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to events
-        </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          Create New Event
-        </h1>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
-          Enter details once — Vero generates the quotation, contract, event
-          order & operations checklist.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to events
+          </Link>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+            Create New Event
+          </h1>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Enter details once — Vero generates the quotation, contract, event
+            order & operations checklist.
+          </p>
+        </div>
+
+        {/* Flow variant toggle */}
+        <div className="shrink-0">
+          <div className="inline-flex overflow-hidden rounded-md border">
+            <VariantButton
+              active={variant === "guided"}
+              onClick={() => chooseVariant("guided")}
+              label="Guided"
+            />
+            <VariantButton
+              active={variant === "express"}
+              onClick={() => chooseVariant("express")}
+              label="Express"
+            />
+          </div>
+          <p className="mt-1 text-right text-[11px] text-muted-foreground">
+            {variant === "express"
+              ? "Info & catering on one screen"
+              : "Step-by-step (3 steps)"}
+          </p>
+        </div>
       </div>
 
       {/* Stepper */}
       <div className="flex items-center justify-center gap-2 sm:gap-4">
-        {STEPS.map((s, i) => {
+        {steps.map((s, i) => {
           const active = step === s.n;
           const done = step > s.n;
           return (
@@ -295,7 +351,7 @@ export default function CreateEventPage() {
                   {s.label}
                 </span>
               </div>
-              {i < STEPS.length - 1 && (
+              {i < steps.length - 1 && (
                 <div
                   className={cn(
                     "h-px w-5 sm:w-16",
@@ -308,8 +364,8 @@ export default function CreateEventPage() {
         })}
       </div>
 
-      {/* STEP 1 — Event Info */}
-      {step === 1 && (
+      {/* Event Info — step 1 in both variants */}
+      {showInfo && (
         <div className="space-y-6">
           <Card className="p-6">
             <SectionTitle title="Client Information" />
@@ -441,8 +497,8 @@ export default function CreateEventPage() {
         </div>
       )}
 
-      {/* STEP 2 — Catering Details */}
-      {step === 2 && (
+      {/* Catering Details — step 2 (guided) / part of step 1 (express) */}
+      {showCatering && (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card className="p-6">
@@ -569,8 +625,8 @@ export default function CreateEventPage() {
         </div>
       )}
 
-      {/* STEP 3 — Review & Save */}
-      {step === 3 && (
+      {/* Review & Save — final step */}
+      {showReview && (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <Card className="p-6">
@@ -657,19 +713,12 @@ export default function CreateEventPage() {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        {step === 1 && (
-          <Button onClick={() => setStep(2)} disabled={!canNext}>
-            Next: Catering Details
+        {step < reviewStep ? (
+          <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
+            Next: {steps[step].label}
             <ArrowRight className="h-4 w-4" />
           </Button>
-        )}
-        {step === 2 && (
-          <Button onClick={() => setStep(3)}>
-            Next: Review & Save
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        )}
-        {step === 3 && (
+        ) : (
           <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4" />
             {saving ? "Saving…" : "Save Event"}
@@ -881,6 +930,31 @@ function EditableLine({
         />
       </div>
     </div>
+  );
+}
+
+function VariantButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "px-3 py-1.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted"
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
