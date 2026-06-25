@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { StoreProvider } from "@/lib/store";
+import { CatalogProvider } from "@/lib/catalog-store";
+import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -27,8 +29,12 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="font-sans antialiased">
         <StoreProvider>
-          <AppShell>{children}</AppShell>
-          <Toaster position="bottom-right" richColors />
+          <CatalogProvider>
+            <SidebarProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster position="bottom-right" richColors />
+            </SidebarProvider>
+          </CatalogProvider>
         </StoreProvider>
       </body>
     </html>

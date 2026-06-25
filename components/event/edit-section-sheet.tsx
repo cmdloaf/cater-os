@@ -32,7 +32,8 @@ import type {
   PackageTier,
   ServiceStyle,
 } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { deriveQuote } from "@/lib/pricing";
 
 export type EditSection =
   | "client"
@@ -290,6 +291,36 @@ function PackageForm({ draft, setDraft }: FormProps) {
   const upd = (patch: Partial<typeof c>) =>
     setDraft({ ...draft, commercial: { ...c, ...patch } });
   const tiers: PackageTier[] = ["Silver", "Gold", "Platinum", "Custom"];
+
+  // Discount can be entered as a flat amount or a % of the subtotal.
+  const subtotal = deriveQuote(draft).subtotal;
+  const [discountMode, setDiscountMode] = useState<"amount" | "percent">(
+    "amount"
+  );
+  const [discountPercent, setDiscountPercent] = useState("0");
+  const effectivePct = subtotal > 0 ? (c.discount / subtotal) * 100 : 0;
+
+  // While in percent mode, keep the stored peso discount in sync with the
+  // percentage and the (possibly changing) subtotal.
+  useEffect(() => {
+    if (discountMode !== "percent") return;
+    const pct = Number(discountPercent) || 0;
+    const value = Math.round((subtotal * pct) / 100);
+    setDraft((d) =>
+      d.commercial.discount === value
+        ? d
+        : { ...d, commercial: { ...d.commercial, discount: value } }
+    );
+  }, [discountMode, discountPercent, subtotal, setDraft]);
+
+  function switchMode(m: "amount" | "percent") {
+    if (m === "percent") {
+      const pct = subtotal > 0 ? (c.discount / subtotal) * 100 : 0;
+      setDiscountPercent(pct ? String(Number(pct.toFixed(2))) : "0");
+    }
+    setDiscountMode(m);
+  }
+
   return (
     <>
       <div>
@@ -321,6 +352,69 @@ function PackageForm({ draft, setDraft }: FormProps) {
           value={c.budgetPerHead}
           onChange={(e) => upd({ budgetPerHead: Number(e.target.value) || 0 })}
         />
+      </div>
+      <div>
+        <FieldLabel>Transportation Fee</FieldLabel>
+        <Input
+          type="number"
+          value={c.transportationFee}
+          onChange={(e) =>
+            upd({ transportationFee: Number(e.target.value) || 0 })
+          }
+        />
+      </div>
+      <div>
+        <div className="mb-1.5 flex items-center justify-between">
+          <FieldLabel>Discount</FieldLabel>
+          <div className="inline-flex overflow-hidden rounded-md border">
+            {(["amount", "percent"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => switchMode(m)}
+                className={cn(
+                  "px-2.5 py-0.5 text-xs font-medium transition-colors",
+                  discountMode === m
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {m === "amount" ? "₱" : "%"}
+              </button>
+            ))}
+          </div>
+        </div>
+        {discountMode === "percent" ? (
+          <>
+            <div className="relative">
+              <Input
+                type="number"
+                min={0}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                className="pr-7"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                %
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              = –{formatCurrency(c.discount)}
+            </p>
+          </>
+        ) : (
+          <>
+            <Input
+              type="number"
+              min={0}
+              value={c.discount}
+              onChange={(e) => upd({ discount: Number(e.target.value) || 0 })}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              ≈ {effectivePct.toFixed(1)}% of subtotal
+            </p>
+          </>
+        )}
       </div>
       <div>
         <FieldLabel>Reservation Fee</FieldLabel>

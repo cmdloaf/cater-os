@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Plus,
-  CalendarClock,
-  FileClock,
+  CalendarRange,
+  FileEdit,
   CircleCheckBig,
+  PartyPopper,
   Users,
-  ArrowUpRight,
+  Package,
+  UtensilsCrossed,
+  LayoutTemplate,
+  PlusCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,31 +36,60 @@ import {
 } from "@/components/ui/select";
 import { StatusBadge } from "@/components/status-badge";
 import { useStore } from "@/lib/store";
-import { eventTotal } from "@/lib/documents";
 import { EVENT_STATUSES } from "@/lib/types";
-import { cn, formatCurrency, formatDate, timeAgo } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 const STAT_META = [
   {
-    key: "upcoming" as const,
-    label: "Upcoming Events",
-    icon: CalendarClock,
-    accent: "text-blue-600 bg-blue-50",
-    hint: "Confirmed & upcoming",
+    key: "totalEvents" as const,
+    label: "Total Events",
+    icon: CalendarRange,
+    accent: "text-zinc-600 bg-zinc-100",
   },
   {
-    key: "pendingQuotations" as const,
-    label: "Pending Quotations",
-    icon: FileClock,
+    key: "draft" as const,
+    label: "Draft",
+    icon: FileEdit,
     accent: "text-amber-600 bg-amber-50",
-    hint: "Awaiting client response",
   },
   {
     key: "confirmed" as const,
-    label: "Confirmed Events",
+    label: "Confirmed",
     icon: CircleCheckBig,
     accent: "text-emerald-600 bg-emerald-50",
-    hint: "Booking secured",
+  },
+  {
+    key: "completed" as const,
+    label: "Completed",
+    icon: PartyPopper,
+    accent: "text-blue-600 bg-blue-50",
+  },
+];
+
+const QUICK_ACTIONS = [
+  {
+    label: "Import Packages",
+    hint: "From Excel or CSV",
+    icon: Package,
+    href: "/import",
+  },
+  {
+    label: "Import Menus",
+    hint: "From Excel or CSV",
+    icon: UtensilsCrossed,
+    href: "/import",
+  },
+  {
+    label: "Import Templates",
+    hint: "Contracts, Event Orders",
+    icon: LayoutTemplate,
+    href: "/import",
+  },
+  {
+    label: "Add Add-on",
+    hint: "Create new add-on",
+    icon: PlusCircle,
+    href: "/addons",
   },
 ];
 
@@ -77,42 +110,44 @@ export default function DashboardPage() {
       )
       .sort(
         (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          new Date(a.event.eventDate).getTime() -
+          new Date(b.event.eventDate).getTime()
       );
   }, [events, query, status]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Greeting header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Good morning! 👋
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every event is a single record that generates all your documents.
+            Here&rsquo;s what&rsquo;s happening with your events.
           </p>
         </div>
         <Button asChild>
           <Link href="/events/new">
             <Plus className="h-4 w-4" />
-            Create Event
+            New Event
           </Link>
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STAT_META.map((s) => {
           const Icon = s.icon;
           return (
             <Card key={s.key} className="p-5">
-              <div className="flex items-start justify-between">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-muted-foreground">{s.label}</div>
-                  <div className="mt-2 text-3xl font-semibold tracking-tight">
+                  <div className="text-3xl font-semibold tracking-tight">
                     {ready ? stats[s.key] : "—"}
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {s.hint}
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {s.label}
                   </div>
                 </div>
                 <div
@@ -129,21 +164,19 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Table card */}
+      {/* Upcoming events table card */}
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold">Upcoming Events</h2>
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search events or clients…"
-              className="w-full sm:w-72"
+              className="w-full sm:w-56"
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Status</span>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -163,12 +196,9 @@ export default function DashboardPage() {
             <TableRow className="hover:bg-transparent">
               <TableHead>Event Name</TableHead>
               <TableHead>Client</TableHead>
-              <TableHead>Event Date</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead className="text-right">Pax</TableHead>
-              <TableHead className="text-right">Total</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,24 +219,15 @@ export default function DashboardPage() {
                     {e.event.pax}
                   </span>
                 </TableCell>
-                <TableCell className="text-right font-medium tabular-nums">
-                  {formatCurrency(eventTotal(e))}
-                </TableCell>
                 <TableCell>
                   <StatusBadge status={e.status} />
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {timeAgo(e.updatedAt)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ))}
             {filtered.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={8}
+                  colSpan={5}
                   className="py-12 text-center text-sm text-muted-foreground"
                 >
                   No events match your filters.
@@ -216,6 +237,29 @@ export default function DashboardPage() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Quick actions */}
+      <div>
+        <h2 className="mb-3 text-base font-semibold">Quick Actions</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {QUICK_ACTIONS.map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link key={a.label} href={a.href}>
+                <Card className="flex h-full flex-col items-start gap-3 p-5 transition-colors hover:border-primary/40 hover:bg-accent/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{a.label}</div>
+                    <div className="text-xs text-muted-foreground">{a.hint}</div>
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

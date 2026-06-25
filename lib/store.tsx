@@ -148,6 +148,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .length,
       confirmed: events.filter((e) => e.status === "Confirmed").length,
       totalEvents: events.length,
+      draft: events.filter((e) => e.status === "Draft").length,
+      completed: events.filter((e) => e.status === "Completed").length,
     };
   }, [events]);
 

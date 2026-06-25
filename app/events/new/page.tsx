@@ -8,9 +8,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  User,
-  CalendarDays,
-  Receipt,
+  Minus,
+  Plus,
   Save,
   Sparkles,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -29,27 +29,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/lib/store";
+import { useCatalog } from "@/lib/catalog-store";
 import {
-  ADDON_CATALOG,
+  COURSE_OPTIONS,
   EVENT_TYPES,
-  MENU_SETS,
-  PACKAGES,
-  SERVICE_STYLES,
+  MENU_COURSES,
+  type MenuCourse,
 } from "@/lib/catalog";
-import type {
-  AddOn,
-  NewEventInput,
-  PackageTier,
-  ServiceStyle,
-} from "@/lib/types";
+import type { AddOn, MenuItem, NewEventInput } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
 import { SERVICE_CHARGE_RATE, VAT_RATE } from "@/lib/pricing";
 
 const STEPS = [
-  { n: 1, label: "Client", icon: User, hint: "Who you're catering for" },
-  { n: 2, label: "Event", icon: CalendarDays, hint: "Date, venue & guests" },
-  { n: 3, label: "Commercial", icon: Receipt, hint: "Package & pricing" },
+  { n: 1, label: "Event Info" },
+  { n: 2, label: "Catering Details" },
+  { n: 3, label: "Review & Save" },
 ];
+
+/** Time options in 30-minute increments, e.g. "12:00 AM" … "11:30 PM". */
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+  const h24 = Math.floor(i / 2);
+  const minutes = i % 2 === 0 ? "00" : "30";
+  const period = h24 < 12 ? "AM" : "PM";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${minutes} ${period}`;
+});
 
 interface FormState {
   // client
@@ -58,20 +62,28 @@ interface FormState {
   mobile: string;
   email: string;
   // event
-  eventName: string;
   eventType: string;
-  serviceStyle: ServiceStyle;
   eventDate: string;
   eventTime: string;
   venue: string;
   venueAddress: string;
   pax: string;
-  // commercial
-  packageTier: PackageTier;
-  budgetPerHead: string;
-  menuSetId: string;
+  theme: string;
+  // catering
+  packageName: string;
+  menu: Record<string, string>;
   addOns: string[];
+  transportationFee: string;
+  discount: string;
+  discountMode: "amount" | "percent";
+  discountPercent: string;
   specialRequests: string;
+}
+
+function initialMenu(): Record<string, string> {
+  return Object.fromEntries(
+    MENU_COURSES.map((c) => [c, COURSE_OPTIONS[c][0]])
+  );
 }
 
 const INITIAL: FormState = {
@@ -79,59 +91,87 @@ const INITIAL: FormState = {
   contactPerson: "",
   mobile: "",
   email: "",
-  eventName: "",
-  eventType: EVENT_TYPES[0],
-  serviceStyle: "Buffet",
+  eventType: EVENT_TYPES[1],
   eventDate: "",
   eventTime: "",
   venue: "",
   venueAddress: "",
-  pax: "",
-  packageTier: "Gold",
-  budgetPerHead: "1450",
-  menuSetId: "international-buffet",
+  pax: "150",
+  theme: "",
+  packageName: "",
+  menu: initialMenu(),
   addOns: [],
+  transportationFee: "5000",
+  discount: "0",
+  discountMode: "amount",
+  discountPercent: "0",
   specialRequests: "",
 };
 
 export default function CreateEventPage() {
   const router = useRouter();
   const { createEvent } = useStore();
+  const { packages, addOns: addOnCatalog } = useCatalog();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<FormState>(INITIAL);
+  const [form, setForm] = useState<FormState>(() => ({
+    ...INITIAL,
+    packageName: "",
+  }));
+
+  // Default to the first package once the catalog is available.
+  const activePackage =
+    packages.find((p) => p.name === form.packageName) ?? packages[0];
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   const selectedAddOns: AddOn[] = useMemo(
-    () => ADDON_CATALOG.filter((a) => form.addOns.includes(a.name)),
-    [form.addOns]
+    () => addOnCatalog.filter((a) => form.addOns.includes(a.name)),
+    [addOnCatalog, form.addOns]
   );
 
-  const estimate = useMemo(() => {
+  const pricing = useMemo(() => {
     const pax = Number(form.pax) || 0;
-    const perHead = Number(form.budgetPerHead) || 0;
-    const addOnTotal = selectedAddOns.reduce((s, a) => s + a.price, 0);
-    const subtotal = pax * perHead + addOnTotal;
-    const sc = subtotal * SERVICE_CHARGE_RATE;
-    const vat = (subtotal + sc) * VAT_RATE;
-    return { subtotal, total: subtotal + sc + vat };
-  }, [form.pax, form.budgetPerHead, selectedAddOns]);
+    const perHead = activePackage?.perHead ?? 0;
+    const packageAmount = pax * perHead;
+    const addOnsTotal = selectedAddOns.reduce((s, a) => s + a.price, 0);
+    const transport = Number(form.transportationFee) || 0;
+    const subtotal = packageAmount + addOnsTotal + transport;
+    const discount =
+      form.discountMode === "percent"
+        ? Math.round((subtotal * (Number(form.discountPercent) || 0)) / 100)
+        : Number(form.discount) || 0;
+    const serviceCharge = subtotal * SERVICE_CHARGE_RATE;
+    const vat = (subtotal + serviceCharge) * VAT_RATE;
+    const total = subtotal + serviceCharge + vat - discount;
+    return {
+      pax,
+      perHead,
+      packageAmount,
+      addOnsTotal,
+      transport,
+      discount,
+      subtotal,
+      serviceCharge,
+      vat,
+      total,
+    };
+  }, [
+    form.pax,
+    form.transportationFee,
+    form.discount,
+    form.discountMode,
+    form.discountPercent,
+    activePackage,
+    selectedAddOns,
+  ]);
 
   const canNext =
     step === 1
-      ? form.clientName.trim() && form.contactPerson.trim()
-      : step === 2
-        ? form.eventName.trim() && form.eventDate && form.pax
-        : true;
-
-  function choosePackage(tier: PackageTier) {
-    const pkg = PACKAGES.find((p) => p.tier === tier)!;
-    set("packageTier", tier);
-    set("budgetPerHead", String(pkg.perHead));
-  }
+      ? form.clientName.trim() && form.contactPerson.trim() && form.eventDate
+      : true;
 
   function toggleAddOn(name: string) {
     setForm((f) => ({
@@ -142,18 +182,27 @@ export default function CreateEventPage() {
     }));
   }
 
+  function adjustPax(delta: number) {
+    const next = Math.max(1, (Number(form.pax) || 0) + delta);
+    set("pax", String(next));
+  }
+
+  function menuItems(): MenuItem[] {
+    return MENU_COURSES.map((c) => ({ category: c, name: form.menu[c] })).filter(
+      (m) => m.name
+    );
+  }
+
   async function handleSave() {
     setSaving(true);
-    const pkg = PACKAGES.find((p) => p.tier === form.packageTier)!;
-    const menuSet = MENU_SETS.find((m) => m.id === form.menuSetId);
     const pax = Number(form.pax) || 0;
     const reservationFee = Math.max(
       10000,
-      Math.round((estimate.total * 0.2) / 5000) * 5000
+      Math.round((pricing.total * 0.2) / 5000) * 5000
     );
 
     const input: NewEventInput = {
-      eventName: form.eventName.trim(),
+      eventName: form.clientName.trim(),
       status: "Draft",
       reservationFee,
       client: {
@@ -164,7 +213,7 @@ export default function CreateEventPage() {
       },
       event: {
         eventType: form.eventType,
-        serviceStyle: form.serviceStyle,
+        serviceStyle: "Buffet",
         eventDate: form.eventDate,
         eventTime: form.eventTime,
         venue: form.venue.trim(),
@@ -172,15 +221,17 @@ export default function CreateEventPage() {
         pax,
       },
       commercial: {
-        packageTier: form.packageTier,
-        packageName: pkg.name,
-        budgetPerHead: Number(form.budgetPerHead) || 0,
-        menu: menuSet ? menuSet.items : [],
+        packageTier: activePackage?.tier ?? "Custom",
+        packageName: activePackage?.name ?? "Custom Package",
+        budgetPerHead: activePackage?.perHead ?? 0,
+        menu: menuItems(),
         addOns: selectedAddOns,
+        transportationFee: Number(form.transportationFee) || 0,
+        discount: pricing.discount,
         specialRequests: form.specialRequests.trim(),
       },
       order: {
-        theme: "",
+        theme: form.theme.trim(),
         setupRequirements: "",
         ingress: "3 hrs before call time",
         egress: "1 hr after program",
@@ -207,7 +258,7 @@ export default function CreateEventPage() {
           Back to events
         </Link>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-          Create Event
+          Create New Event
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -217,44 +268,36 @@ export default function CreateEventPage() {
       </div>
 
       {/* Stepper */}
-      <div className="flex items-center">
+      <div className="flex items-center justify-center gap-2 sm:gap-4">
         {STEPS.map((s, i) => {
           const active = step === s.n;
           const done = step > s.n;
-          const Icon = s.icon;
           return (
-            <div key={s.n} className="flex flex-1 items-center">
-              <div className="flex items-center gap-3">
+            <div key={s.n} className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-2">
                 <div
                   className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
+                    "flex h-7 w-7 items-center justify-center rounded-full border text-sm font-medium transition-colors",
                     done && "border-primary bg-primary text-primary-foreground",
-                    active && "border-primary text-primary",
-                    !active && !done && "border-zinc-200 text-muted-foreground"
+                    active && "border-primary bg-primary text-primary-foreground",
+                    !active && !done && "border-zinc-300 text-muted-foreground"
                   )}
                 >
-                  {done ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    <Icon className="h-5 w-5" />
+                  {done ? <Check className="h-4 w-4" /> : s.n}
+                </div>
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    active || done ? "text-foreground" : "text-muted-foreground"
                   )}
-                </div>
-                <div className="hidden sm:block">
-                  <div
-                    className={cn(
-                      "text-sm font-medium",
-                      active || done ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    Step {s.n} · {s.label}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{s.hint}</div>
-                </div>
+                >
+                  {s.label}
+                </span>
               </div>
               {i < STEPS.length - 1 && (
                 <div
                   className={cn(
-                    "mx-3 h-0.5 flex-1 rounded",
+                    "h-px w-8 sm:w-16",
                     step > s.n ? "bg-primary" : "bg-zinc-200"
                   )}
                 />
@@ -264,33 +307,31 @@ export default function CreateEventPage() {
         })}
       </div>
 
-      <Card className="p-6">
-        {step === 1 && (
-          <div className="space-y-5">
-            <SectionTitle
-              title="Client Information"
-              subtitle="The organization or person booking the event."
-            />
+      {/* STEP 1 — Event Info */}
+      {step === 1 && (
+        <div className="space-y-6">
+          <Card className="p-6">
+            <SectionTitle title="Client Information" />
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Client Name" required>
                 <Input
                   value={form.clientName}
                   onChange={(e) => set("clientName", e.target.value)}
-                  placeholder="e.g. ABC Corporation"
+                  placeholder="e.g. Amplify Philippines"
                 />
               </Field>
               <Field label="Contact Person" required>
                 <Input
                   value={form.contactPerson}
                   onChange={(e) => set("contactPerson", e.target.value)}
-                  placeholder="e.g. Maria Santos"
+                  placeholder="e.g. Ms. Marianne Dela Cruz"
                 />
               </Field>
-              <Field label="Mobile Number">
+              <Field label="Contact Number">
                 <Input
                   value={form.mobile}
                   onChange={(e) => set("mobile", e.target.value)}
-                  placeholder="+63 9XX XXX XXXX"
+                  placeholder="0917 123 4567"
                 />
               </Field>
               <Field label="Email Address">
@@ -302,23 +343,11 @@ export default function CreateEventPage() {
                 />
               </Field>
             </div>
-          </div>
-        )}
+          </Card>
 
-        {step === 2 && (
-          <div className="space-y-5">
-            <SectionTitle
-              title="Event Information"
-              subtitle="When, where and for how many guests."
-            />
-            <Field label="Event Name" required>
-              <Input
-                value={form.eventName}
-                onChange={(e) => set("eventName", e.target.value)}
-                placeholder="e.g. ABC Corp Year-End Party"
-              />
-            </Field>
-            <div className="grid gap-5 sm:grid-cols-2">
+          <Card className="p-6">
+            <SectionTitle title="Event Information" />
+            <div className="grid gap-5 sm:grid-cols-3">
               <Field label="Event Type">
                 <Select
                   value={form.eventType}
@@ -336,23 +365,6 @@ export default function CreateEventPage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Service Style">
-                <Select
-                  value={form.serviceStyle}
-                  onValueChange={(v) => set("serviceStyle", v as ServiceStyle)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_STYLES.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
               <Field label="Event Date" required>
                 <Input
                   type="date"
@@ -362,118 +374,161 @@ export default function CreateEventPage() {
               </Field>
               <Field label="Event Time">
                 <Input
+                  list="time-slots"
                   value={form.eventTime}
                   onChange={(e) => set("eventTime", e.target.value)}
-                  placeholder="e.g. 6:00 PM"
+                  placeholder="e.g. 11:00 AM"
                 />
+                <datalist id="time-slots">
+                  {TIME_SLOTS.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
               </Field>
               <Field label="Venue">
                 <Input
                   value={form.venue}
                   onChange={(e) => set("venue", e.target.value)}
-                  placeholder="e.g. Grand Ballroom, Marco Polo"
+                  placeholder="e.g. Bulb Studios Makati"
                 />
               </Field>
-              <Field label="Number of Pax" required>
+              <Field label="Venue Address">
                 <Input
-                  type="number"
-                  min={1}
-                  value={form.pax}
-                  onChange={(e) => set("pax", e.target.value)}
-                  placeholder="e.g. 250"
+                  value={form.venueAddress}
+                  onChange={(e) => set("venueAddress", e.target.value)}
+                  placeholder="e.g. P. Burgos St. Makati City"
+                />
+              </Field>
+              <Field label="Expected Pax" required>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => adjustPax(-10)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={form.pax}
+                    onChange={(e) => set("pax", e.target.value)}
+                    className="text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => adjustPax(10)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Field>
+            </div>
+            <div className="mt-5">
+              <Field label="Theme / Motif (Optional)">
+                <Input
+                  value={form.theme}
+                  onChange={(e) => set("theme", e.target.value)}
+                  placeholder="e.g. Modern Corporate"
                 />
               </Field>
             </div>
-            <Field label="Venue Address">
-              <Input
-                value={form.venueAddress}
-                onChange={(e) => set("venueAddress", e.target.value)}
-                placeholder="Street, City"
-              />
-            </Field>
-          </div>
-        )}
+          </Card>
+        </div>
+      )}
 
-        {step === 3 && (
-          <div className="space-y-6">
-            <SectionTitle
-              title="Commercial Information"
-              subtitle="Package, menu and pricing drive your quotation."
-            />
-
-            <div>
-              <Label className="mb-2 block">Package</Label>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {PACKAGES.map((p) => {
-                  const active = form.packageTier === p.tier;
-                  return (
-                    <button
-                      key={p.tier}
-                      type="button"
-                      onClick={() => choosePackage(p.tier)}
-                      className={cn(
-                        "rounded-lg border p-4 text-left transition-colors",
-                        active
-                          ? "border-primary bg-accent/50 ring-1 ring-primary"
-                          : "hover:border-zinc-300"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{p.tier}</span>
-                        {active && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {formatCurrency(p.perHead)}/head
-                      </div>
-                      <p className="mt-2 text-xs leading-snug text-muted-foreground">
-                        {p.blurb}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Budget Per Head">
-                <Input
-                  type="number"
-                  value={form.budgetPerHead}
-                  onChange={(e) => set("budgetPerHead", e.target.value)}
-                />
-              </Field>
-              <Field label="Menu Selection">
+      {/* STEP 2 — Catering Details */}
+      {step === 2 && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Card className="p-6">
+              <SectionTitle title="Package & Menu" />
+              <Field label="Package" required>
                 <Select
-                  value={form.menuSetId}
-                  onValueChange={(v) => set("menuSetId", v)}
+                  value={activePackage?.name ?? ""}
+                  onValueChange={(v) => set("packageName", v)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MENU_SETS.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.label}
+                    {packages.map((p) => (
+                      <SelectItem key={p.name} value={p.name}>
+                        {p.name} — {formatCurrency(p.perHead)} / pax
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </Field>
-            </div>
 
-            <div>
-              <Label className="mb-2 block">Add-ons</Label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {ADDON_CATALOG.map((a) => {
+              <Separator className="my-5" />
+
+              <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Menu Selection
+              </div>
+              <div className="space-y-3">
+                {MENU_COURSES.map((course) => (
+                  <div
+                    key={course}
+                    className="grid grid-cols-3 items-center gap-3"
+                  >
+                    <Label className="text-sm">{course}</Label>
+                    <div className="col-span-2">
+                      <Select
+                        value={form.menu[course]}
+                        onValueChange={(v) =>
+                          setForm((f) => ({
+                            ...f,
+                            menu: { ...f.menu, [course]: v },
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COURSE_OPTIONS[course as MenuCourse].map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Separator className="my-5" />
+
+              <Field label="Special Requests (Optional)">
+                <Textarea
+                  value={form.specialRequests}
+                  onChange={(e) => set("specialRequests", e.target.value)}
+                  placeholder="Any special instructions or requests?"
+                  rows={3}
+                />
+              </Field>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="p-6">
+              <SectionTitle title="Add-ons" />
+              <div className="space-y-2">
+                {addOnCatalog.map((a) => {
                   const checked = form.addOns.includes(a.name);
                   return (
                     <label
                       key={a.name}
                       className={cn(
                         "flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors",
-                        checked ? "border-primary bg-accent/40" : "hover:border-zinc-300"
+                        checked
+                          ? "border-primary bg-accent/40"
+                          : "hover:border-zinc-300"
                       )}
                     >
                       <span className="flex items-center gap-3">
@@ -483,42 +538,113 @@ export default function CreateEventPage() {
                         />
                         <span className="text-sm font-medium">{a.name}</span>
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground tabular-nums">
                         {formatCurrency(a.price)}
                       </span>
                     </label>
                   );
                 })}
               </div>
-            </div>
+              <Button asChild variant="ghost" size="sm" className="mt-3">
+                <Link href="/addons">
+                  <Plus className="h-4 w-4" /> Create New Add-on
+                </Link>
+              </Button>
+            </Card>
 
-            <Field label="Special Requests">
-              <Textarea
-                value={form.specialRequests}
-                onChange={(e) => set("specialRequests", e.target.value)}
-                placeholder="Dietary restrictions, theme, program notes…"
-                rows={3}
-              />
-            </Field>
-
-            {/* Live estimate */}
-            <div className="flex items-center justify-between rounded-lg border bg-accent/40 p-4">
-              <div>
-                <div className="text-xs text-muted-foreground">
-                  Estimated total (incl. 10% service charge & 12% VAT)
-                </div>
-                <div className="text-2xl font-semibold tracking-tight">
-                  {formatCurrency(estimate.total)}
-                </div>
-              </div>
-              <div className="text-right text-xs text-muted-foreground">
-                Updates live as you build
-                <br /> the Event Record.
-              </div>
-            </div>
+            <PricingSummary
+              pricing={pricing}
+              transportationFee={form.transportationFee}
+              onTransport={(v) => set("transportationFee", v)}
+              editable
+              discountMode={form.discountMode}
+              discountAmount={form.discount}
+              discountPercent={form.discountPercent}
+              onDiscountMode={(m) => set("discountMode", m)}
+              onDiscountAmount={(v) => set("discount", v)}
+              onDiscountPercent={(v) => set("discountPercent", v)}
+            />
           </div>
-        )}
-      </Card>
+        </div>
+      )}
+
+      {/* STEP 3 — Review & Save */}
+      {step === 3 && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Card className="p-6">
+              <SectionTitle title="Client & Event" />
+              <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                <ReviewRow label="Client" value={form.clientName || "—"} />
+                <ReviewRow
+                  label="Contact Person"
+                  value={form.contactPerson || "—"}
+                />
+                <ReviewRow label="Contact Number" value={form.mobile || "—"} />
+                <ReviewRow label="Email" value={form.email || "—"} />
+                <ReviewRow label="Event Type" value={form.eventType} />
+                <ReviewRow label="Date" value={form.eventDate || "—"} />
+                <ReviewRow label="Time" value={form.eventTime || "—"} />
+                <ReviewRow label="Venue" value={form.venue || "—"} />
+                <ReviewRow label="Pax" value={`${form.pax} guests`} />
+                <ReviewRow label="Theme / Motif" value={form.theme || "—"} />
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <SectionTitle title="Catering" />
+              <ReviewRow
+                label="Package"
+                value={`${activePackage?.name ?? "—"} (${formatCurrency(
+                  activePackage?.perHead ?? 0
+                )} / pax)`}
+              />
+              <Separator className="my-3" />
+              <div className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
+                {menuItems().map((m) => (
+                  <div key={m.category} className="flex gap-2 text-sm">
+                    <span className="w-28 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
+                      {m.category}
+                    </span>
+                    <span>{m.name}</span>
+                  </div>
+                ))}
+              </div>
+              {selectedAddOns.length > 0 && (
+                <>
+                  <Separator className="my-3" />
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Add-ons
+                  </div>
+                  <ul className="space-y-1">
+                    {selectedAddOns.map((a) => (
+                      <li
+                        key={a.name}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>{a.name}</span>
+                        <span className="tabular-nums">
+                          {formatCurrency(a.price)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </Card>
+          </div>
+
+          <div>
+            <PricingSummary
+              pricing={pricing}
+              transportationFee={form.transportationFee}
+              discountMode={form.discountMode}
+              discountAmount={form.discount}
+              discountPercent={form.discountPercent}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer nav */}
       <div className="flex items-center justify-between">
@@ -530,12 +656,19 @@ export default function CreateEventPage() {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        {step < 3 ? (
-          <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext}>
-            Next
+        {step === 1 && (
+          <Button onClick={() => setStep(2)} disabled={!canNext}>
+            Next: Catering Details
             <ArrowRight className="h-4 w-4" />
           </Button>
-        ) : (
+        )}
+        {step === 2 && (
+          <Button onClick={() => setStep(3)}>
+            Next: Review & Save
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
+        {step === 3 && (
           <Button onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4" />
             {saving ? "Saving…" : "Save Event"}
@@ -546,19 +679,212 @@ export default function CreateEventPage() {
   );
 }
 
-function SectionTitle({
-  title,
-  subtitle,
+function PricingSummary({
+  pricing,
+  transportationFee,
+  onTransport,
+  editable,
+  discountMode,
+  discountAmount,
+  discountPercent,
+  onDiscountMode,
+  onDiscountAmount,
+  onDiscountPercent,
 }: {
-  title: string;
-  subtitle: string;
+  pricing: {
+    pax: number;
+    perHead: number;
+    packageAmount: number;
+    addOnsTotal: number;
+    subtotal: number;
+    discount: number;
+    serviceCharge: number;
+    vat: number;
+    total: number;
+  };
+  transportationFee: string;
+  onTransport?: (v: string) => void;
+  editable?: boolean;
+  discountMode: "amount" | "percent";
+  discountAmount: string;
+  discountPercent: string;
+  onDiscountMode?: (m: "amount" | "percent") => void;
+  onDiscountAmount?: (v: string) => void;
+  onDiscountPercent?: (v: string) => void;
 }) {
   return (
-    <div>
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    <Card className="p-6">
+      <div className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Pricing Summary
+      </div>
+      <div className="space-y-2 text-sm">
+        <Line
+          label={`${pricing.pax} pax × ${formatCurrency(pricing.perHead)}`}
+          value={pricing.packageAmount}
+        />
+        <Line label="Add-ons Total" value={pricing.addOnsTotal} />
+        {editable ? (
+          <EditableLine
+            label="Transportation Fee"
+            value={transportationFee}
+            onChange={onTransport!}
+          />
+        ) : (
+          <Line label="Transportation Fee" value={Number(transportationFee) || 0} />
+        )}
+        <Line label="Service Charge (10%)" value={pricing.serviceCharge} />
+        <Line label="VAT (12%)" value={pricing.vat} />
+        {editable ? (
+          <DiscountLine
+            mode={discountMode}
+            amount={discountAmount}
+            percent={discountPercent}
+            resolved={pricing.discount}
+            subtotal={pricing.subtotal}
+            onMode={onDiscountMode!}
+            onAmount={onDiscountAmount!}
+            onPercent={onDiscountPercent!}
+          />
+        ) : (
+          <Line label="Discount" value={pricing.discount} negative />
+        )}
+      </div>
+      <Separator className="my-4" />
+      <div className="flex items-center justify-between">
+        <span className="text-base font-semibold">TOTAL</span>
+        <span className="text-xl font-semibold text-primary tabular-nums">
+          {formatCurrency(pricing.total)}
+        </span>
+      </div>
+    </Card>
+  );
+}
+
+function DiscountLine({
+  mode,
+  amount,
+  percent,
+  resolved,
+  subtotal,
+  onMode,
+  onAmount,
+  onPercent,
+}: {
+  mode: "amount" | "percent";
+  amount: string;
+  percent: string;
+  resolved: number;
+  subtotal: number;
+  onMode: (m: "amount" | "percent") => void;
+  onAmount: (v: string) => void;
+  onPercent: (v: string) => void;
+}) {
+  const effectivePct = subtotal > 0 ? (resolved / subtotal) * 100 : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">Discount</span>
+          <div className="inline-flex overflow-hidden rounded-md border">
+            {(["amount", "percent"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onMode(m)}
+                className={cn(
+                  "px-2 py-0.5 text-xs font-medium transition-colors",
+                  mode === m
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {m === "amount" ? "₱" : "%"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {mode === "percent" ? (
+            <>
+              <Input
+                type="number"
+                min={0}
+                value={percent}
+                onChange={(e) => onPercent(e.target.value)}
+                className="h-8 w-20 text-right tabular-nums"
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xs text-muted-foreground">–₱</span>
+              <Input
+                type="number"
+                min={0}
+                value={amount}
+                onChange={(e) => onAmount(e.target.value)}
+                className="h-8 w-24 text-right tabular-nums"
+              />
+            </>
+          )}
+        </div>
+      </div>
+      <div className="text-right text-xs text-muted-foreground">
+        {mode === "percent"
+          ? `= –${formatCurrency(resolved)}`
+          : `≈ ${effectivePct.toFixed(1)}% of subtotal`}
+      </div>
     </div>
   );
+}
+
+function Line({
+  label,
+  value,
+  negative,
+}: {
+  label: string;
+  value: number;
+  negative?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="tabular-nums">
+        {negative && value > 0 ? "–" : ""}
+        {formatCurrency(value)}
+      </span>
+    </div>
+  );
+}
+
+function EditableLine({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground">₱</span>
+        <Input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-24 text-right tabular-nums"
+        />
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <h2 className="mb-4 text-lg font-semibold">{title}</h2>;
 }
 
 function Field({
@@ -577,6 +903,15 @@ function Field({
         {required && <span className="ml-0.5 text-primary">*</span>}
       </Label>
       {children}
+    </div>
+  );
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-right text-sm font-medium">{value}</span>
     </div>
   );
 }

@@ -9,13 +9,18 @@ const STATUS_STYLES: Record<EventStatus, string> = {
   Completed: "bg-zinc-100 text-zinc-500 ring-zinc-200",
 };
 
-const STATUS_DOT: Record<EventStatus, string> = {
+export const STATUS_DOT: Record<EventStatus, string> = {
   Draft: "bg-zinc-400",
   "Quotation Sent": "bg-amber-500",
   Confirmed: "bg-emerald-500",
   Upcoming: "bg-blue-500",
   Completed: "bg-zinc-400",
 };
+
+/** Compact pill classes (bg + text + ring) for calendar event chips. */
+export function statusPillClass(status: EventStatus): string {
+  return STATUS_STYLES[status];
+}
 
 export function StatusBadge({
   status,

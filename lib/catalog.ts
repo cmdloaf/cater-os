@@ -126,3 +126,75 @@ export const ADDON_CATALOG: AddOn[] = [
   { name: "String Quartet (3 hrs)", price: 48000 },
   { name: "Premium Open Bar (3 hrs)", price: 55000 },
 ];
+
+/**
+ * Per-course menu options used by the Catering Details step. The catering
+ * details screen lets you pick one dish per course; each selection is stored as
+ * a `MenuItem` (`category` = course, `name` = dish) so the existing quotation /
+ * event-order rendering keeps working unchanged.
+ */
+export const MENU_COURSES = [
+  "Soup",
+  "Salad",
+  "Rice",
+  "Pasta",
+  "Vegetable",
+  "Chicken or Fish",
+  "Pork or Beef",
+  "Dessert",
+  "Beverage",
+] as const;
+
+export type MenuCourse = (typeof MENU_COURSES)[number];
+
+export const COURSE_OPTIONS: Record<MenuCourse, string[]> = {
+  Soup: [
+    "Three Kinds of Mushroom Soup",
+    "Pumpkin Soup",
+    "Cream of Corn",
+    "Wild Mushroom Cappuccino",
+  ],
+  Salad: [
+    "Caesar Salad",
+    "Garden Fresh Salad",
+    "Burrata & Heirloom Tomato",
+    "Greek Salad",
+  ],
+  Rice: ["Rice Pilaf", "Java Rice", "Steamed Jasmine Rice", "Bagoong Rice"],
+  Pasta: [
+    "Chorizo Bolognese Pasta",
+    "Seafood Marinara",
+    "Truffle Mac & Cheese",
+    "Pesto Cream Penne",
+  ],
+  Vegetable: [
+    "Grilled Zucchini and Corn Cobs",
+    "Buttered Mixed Vegetables",
+    "Ratatouille",
+    "Chopsuey",
+  ],
+  "Chicken or Fish": [
+    "Fish Au Gratin",
+    "Chicken Cordon Bleu",
+    "Herb-Crusted Salmon",
+    "Buttered Chicken",
+  ],
+  "Pork or Beef": [
+    "Roasted Shortplate in Red Wine Reduction",
+    "Beef Caldereta",
+    "Roast Beef with Gravy",
+    "Braised Pork Belly",
+  ],
+  Dessert: [
+    "Panna Cotta with Guava Marmalade",
+    "Leche Flan & Buko Pandan",
+    "Assorted Pastries",
+    "Deconstructed Tiramisu",
+  ],
+  Beverage: [
+    "Kaffir Lemon Iced Tea",
+    "Bottomless Iced Tea & Soda",
+    "Four Seasons Juice",
+    "Brewed Coffee & Tea",
+  ],
+};

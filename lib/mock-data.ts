@@ -45,6 +45,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { name: "Mobile Bar (4 hrs)", price: 35000 },
         { name: "LED Wall & Stage Lighting", price: 45000 },
       ],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "Vegetarian option for 20 guests. Company logo on stage backdrop. Program ends 10 PM.",
     },
@@ -100,6 +102,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { name: "Champagne Tower", price: 25000 },
         { name: "Grazing Table", price: 38000 },
       ],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "No pork. Kids' meals for 12. First dance at 7 PM — clear floor. Pastel floral styling.",
     },
@@ -154,6 +158,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { name: "Premium Open Bar (3 hrs)", price: 55000 },
         { name: "Branded Cocktail Napkins", price: 8000 },
       ],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "Tech-forward presentation. Brand colors (blue/white). Roving servers only — no seated tables.",
     },
@@ -207,6 +213,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { name: "Chocolate Fountain", price: 15000 },
         { name: "Photo Booth (4 hrs)", price: 18000 },
       ],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "18 roses / 18 candles program. Rose gold theme. Dance floor at center.",
     },
@@ -256,6 +264,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { category: "PM Snack", name: "Bibingka & Hot Tsokolate" },
       ],
       addOns: [{ name: "Extra Coffee Station (whole day)", price: 22000 }],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "Strict 10:00 AM and 3:00 PM snack timing. Halal options for 30 delegates.",
     },
@@ -308,6 +318,8 @@ export const SEED_EVENTS: EventRecord[] = [
         { name: "String Quartet (3 hrs)", price: 48000 },
         { name: "Auction Stage & AV Package", price: 60000 },
       ],
+      transportationFee: 5000,
+      discount: 0,
       specialRequests:
         "Black-tie gala. Silent auction area. Reserved head table for 12 honorees.",
     },

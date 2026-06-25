@@ -5,52 +5,90 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarDays,
-  FileText,
+  Package,
+  UtensilsCrossed,
+  PlusCircle,
   LayoutTemplate,
-  Upload,
+  BarChart3,
   Settings,
   ChefHat,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useSidebar } from "./sidebar-context";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Events", href: "/dashboard", icon: CalendarDays, match: "/events" },
-  { label: "Documents", href: "/documents", icon: FileText },
+  { label: "Events", href: "/events", icon: CalendarDays },
+  { label: "Packages", href: "/packages", icon: Package },
+  { label: "Menus", href: "/menus", icon: UtensilsCrossed },
+  { label: "Add-ons", href: "/addons", icon: PlusCircle },
   { label: "Templates", href: "/templates", icon: LayoutTemplate },
-  { label: "Import Data", href: "/import", icon: Upload },
+  { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { collapsed, expanded, setHovered, toggle } = useSidebar();
+
+  // Labels are hidden on the collapsed rail; they fade in once it expands.
+  const labelClass = cn(
+    "whitespace-nowrap transition-opacity duration-200",
+    !expanded && "opacity-0"
+  );
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-white lg:flex">
-      <div className="flex h-16 items-center gap-2.5 border-b px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+    <aside
+      onPointerEnter={() => collapsed && setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      className={cn(
+        "fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden border-r bg-white transition-[width] duration-200 lg:flex",
+        expanded ? "w-60" : "w-16"
+      )}
+    >
+      <div className="flex h-16 items-center gap-2.5 border-b px-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <ChefHat className="h-5 w-5" />
         </div>
-        <div className="leading-tight">
+        <div className={cn("leading-tight", labelClass)}>
           <div className="text-sm font-semibold tracking-tight">CaterOS</div>
           <div className="text-[11px] text-muted-foreground">
             Catering Operations
           </div>
         </div>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            !expanded && "opacity-0"
+          )}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-[18px] w-[18px]" />
+          ) : (
+            <PanelLeftClose className="h-[18px] w-[18px]" />
+          )}
+        </button>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3">
         {NAV.map((item) => {
           const active =
             pathname === item.href ||
-            pathname.startsWith(item.href + "/") ||
-            (item.match ? pathname.startsWith(item.match) : false);
+            (item.href !== "/dashboard" &&
+              pathname.startsWith(item.href + "/"));
           const Icon = item.icon;
           return (
             <Link
               key={item.label}
               href={item.href}
+              title={item.label}
               className={cn(
                 "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
@@ -61,23 +99,27 @@ export function Sidebar() {
               {active && (
                 <span className="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-primary" />
               )}
-              <Icon className="h-[18px] w-[18px]" />
-              {item.label}
+              <Icon className="h-[18px] w-[18px] shrink-0" />
+              <span className={labelClass}>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="border-t p-3">
-        <div className="rounded-lg bg-accent/60 p-3">
-          <div className="text-xs font-medium text-accent-foreground">
-            Single Source of Truth
+        <Link
+          href="/settings"
+          title="Gian Matthew"
+          className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
+        >
+          <Avatar className="h-9 w-9 shrink-0">
+            <AvatarFallback>GM</AvatarFallback>
+          </Avatar>
+          <div className={cn("leading-tight", labelClass)}>
+            <div className="text-sm font-medium">Gian Matthew</div>
+            <div className="text-[11px] text-muted-foreground">Admin</div>
           </div>
-          <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-            Every quotation, contract & event order is generated from one Event
-            Record.
-          </p>
-        </div>
+        </Link>
       </div>
     </aside>
   );

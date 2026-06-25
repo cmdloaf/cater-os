@@ -10,6 +10,11 @@ import {
   FileText,
   FileSignature,
   ClipboardList,
+  ListChecks,
+  RefreshCw,
+  Link2,
+  Copy,
+  Clock,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +27,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { EditSectionSheet, type EditSection } from "./edit-section-sheet";
+import { OperationsTab } from "./operations-tab";
 import { useStore } from "@/lib/store";
 import type { EventRecord } from "@/lib/types";
 import { deriveQuote, SERVICE_CHARGE_RATE, VAT_RATE } from "@/lib/pricing";
@@ -38,10 +44,19 @@ export function DocumentsTab({ record }: { record: EventRecord }) {
     setTimeout(() => window.print(), 350);
   }
 
+  async function sendToClient() {
+    await setStatus(record.id, "Quotation Sent");
+    toast.success("Quotation sent to client", {
+      description: `Emailed to ${
+        record.client.email || "the client"
+      }. Status set to “Quotation Sent”.`,
+    });
+  }
+
   return (
     <div>
       <Tabs defaultValue="quotation">
-        <TabsList className="no-print">
+        <TabsList className="no-print flex-wrap">
           <TabsTrigger value="quotation">
             <FileText className="h-4 w-4" />
             Quotation
@@ -54,56 +69,52 @@ export function DocumentsTab({ record }: { record: EventRecord }) {
             <ClipboardList className="h-4 w-4" />
             Event Order
           </TabsTrigger>
+          <TabsTrigger value="checklist">
+            <ListChecks className="h-4 w-4" />
+            Checklist
+          </TabsTrigger>
         </TabsList>
 
         {/* QUOTATION */}
         <TabsContent value="quotation" className="mt-4">
-          <DocToolbar>
-            <Button variant="outline" size="sm" onClick={() => setEditing("package")}>
-              <Pencil className="h-4 w-4" /> Edit
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => generatePdf("Quotation")}>
-              <FileDown className="h-4 w-4" /> Generate PDF
-            </Button>
-            <Button
-              size="sm"
-              onClick={async () => {
-                await setStatus(record.id, "Quotation Sent");
-                toast.success("Quotation sent to client", {
-                  description: `Emailed to ${record.client.email || "the client"}. Status set to “Quotation Sent”.`,
-                });
-              }}
-            >
-              <Send className="h-4 w-4" /> Send to Client
-            </Button>
-          </DocToolbar>
-          <QuotationDoc record={record} />
+          <DocLayout
+            record={record}
+            docName="Quotation"
+            onGenerate={() => generatePdf("Quotation")}
+            onEdit={() => setEditing("package")}
+            onSend={sendToClient}
+          >
+            <QuotationDoc record={record} />
+          </DocLayout>
         </TabsContent>
 
         {/* CONTRACT */}
         <TabsContent value="contract" className="mt-4">
-          <DocToolbar>
-            <Button variant="outline" size="sm" onClick={() => setEditing("package")}>
-              <Pencil className="h-4 w-4" /> Edit
-            </Button>
-            <Button size="sm" onClick={() => generatePdf("Contract")}>
-              <FileDown className="h-4 w-4" /> Generate Contract PDF
-            </Button>
-          </DocToolbar>
-          <ContractDoc record={record} />
+          <DocLayout
+            record={record}
+            docName="Contract"
+            onGenerate={() => generatePdf("Contract")}
+            onEdit={() => setEditing("package")}
+          >
+            <ContractDoc record={record} />
+          </DocLayout>
         </TabsContent>
 
         {/* EVENT ORDER */}
         <TabsContent value="order" className="mt-4">
-          <DocToolbar>
-            <Button variant="outline" size="sm" onClick={() => setEditing("order")}>
-              <Pencil className="h-4 w-4" /> Edit
-            </Button>
-            <Button size="sm" onClick={() => generatePdf("Event Order")}>
-              <FileDown className="h-4 w-4" /> Generate Event Order PDF
-            </Button>
-          </DocToolbar>
-          <EventOrderDoc record={record} />
+          <DocLayout
+            record={record}
+            docName="Event Order"
+            onGenerate={() => generatePdf("Event Order")}
+            onEdit={() => setEditing("order")}
+          >
+            <EventOrderDoc record={record} />
+          </DocLayout>
+        </TabsContent>
+
+        {/* CHECKLIST */}
+        <TabsContent value="checklist" className="mt-4">
+          <OperationsTab record={record} />
         </TabsContent>
       </Tabs>
 
@@ -119,26 +130,130 @@ export function DocumentsTab({ record }: { record: EventRecord }) {
   );
 }
 
-function DocToolbar({ children }: { children: React.ReactNode }) {
+/* ----------------------------- Document layout ---------------------------- */
+
+function DocLayout({
+  record,
+  docName,
+  onGenerate,
+  onEdit,
+  onSend,
+  children,
+}: {
+  record: EventRecord;
+  docName: string;
+  onGenerate: () => void;
+  onEdit: () => void;
+  onSend?: () => void;
+  children: React.ReactNode;
+}) {
+  const shareUrl = `https://app.cateros.ph/share/${record.id.slice(-6)}`;
+
+  function copyLink() {
+    navigator.clipboard?.writeText(shareUrl).then(
+      () => toast.success("Share link copied"),
+      () => toast.error("Couldn't copy link")
+    );
+  }
+
   return (
-    <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
-      <p className="text-xs text-muted-foreground">
-        Live preview — generated from the Event Record.
-      </p>
-      <div className="flex gap-2">{children}</div>
+    <div className="grid gap-6 lg:grid-cols-3">
+      <div className="lg:col-span-2">{children}</div>
+
+      {/* Action rail */}
+      <div className="no-print space-y-4">
+        <Card className="p-5">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Document Actions
+          </div>
+          <div className="space-y-2">
+            <Button className="w-full justify-start" onClick={onGenerate}>
+              <RefreshCw className="h-4 w-4" /> Generate / Regenerate
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={onEdit}
+            >
+              <Pencil className="h-4 w-4" /> Edit Before Generating
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={onGenerate}
+            >
+              <FileDown className="h-4 w-4" /> Download PDF
+            </Button>
+            {onSend && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={onSend}
+              >
+                <Send className="h-4 w-4" /> Send to Client
+              </Button>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Link2 className="h-3.5 w-3.5" /> Share Link
+          </div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Anyone with the link can view.
+          </p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 truncate rounded-md border bg-muted/50 px-2.5 py-1.5 text-xs">
+              {shareUrl}
+            </div>
+            <Button variant="outline" size="icon" onClick={copyLink}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" /> Document History
+          </div>
+          <ul className="space-y-3 text-sm">
+            <HistoryItem
+              title={`${docName} updated`}
+              time={record.updatedAt}
+            />
+            <HistoryItem title="Event Record created" time={record.createdAt} />
+          </ul>
+        </Card>
+      </div>
     </div>
+  );
+}
+
+function HistoryItem({ title, time }: { title: string; time: string }) {
+  const d = new Date(time);
+  const when = isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+  return (
+    <li className="flex items-start gap-2">
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+      <div>
+        <div className="font-medium">{title}</div>
+        <div className="text-xs text-muted-foreground">{when}</div>
+      </div>
+    </li>
   );
 }
 
 /* ------------------------------- Letterhead ------------------------------- */
 
-function Letterhead({
-  docTitle,
-  docNo,
-}: {
-  docTitle: string;
-  docNo: string;
-}) {
+function Letterhead({ docTitle, docNo }: { docTitle: string; docNo: string }) {
   return (
     <div className="flex items-start justify-between border-b pb-5">
       <div className="flex items-center gap-3">
@@ -146,7 +261,9 @@ function Letterhead({
           <ChefHat className="h-6 w-6" />
         </div>
         <div>
-          <div className="text-lg font-semibold tracking-tight">CaterOS Catering</div>
+          <div className="text-lg font-semibold tracking-tight">
+            CaterOS Catering
+          </div>
           <div className="text-xs text-muted-foreground">
             123 Banquet Ave, Makati City · +63 2 8555 0100 · hello@cateros.ph
           </div>
@@ -167,9 +284,7 @@ function Letterhead({
 
 function DocShell({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="print-area mx-auto max-w-3xl p-8 shadow-sm sm:p-10">
-      {children}
-    </Card>
+    <Card className="print-area p-8 shadow-sm sm:p-10">{children}</Card>
   );
 }
 
@@ -203,7 +318,10 @@ function QuotationDoc({ record }: { record: EventRecord }) {
   const quote = deriveQuote(record);
   return (
     <DocShell>
-      <Letterhead docTitle="Quotation" docNo={`QTN-${record.id.slice(-6).toUpperCase()}`} />
+      <Letterhead
+        docTitle="Quotation"
+        docNo={`QTN-${record.id.slice(-6).toUpperCase()}`}
+      />
 
       <div className="grid gap-8 py-6 sm:grid-cols-2">
         <InfoBlock
@@ -238,7 +356,7 @@ function QuotationDoc({ record }: { record: EventRecord }) {
         <div className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
           {record.commercial.menu.map((m, i) => (
             <div key={i} className="flex gap-2 text-sm">
-              <span className="w-20 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
                 {m.category}
               </span>
               <span>{m.name}</span>
@@ -260,8 +378,20 @@ function QuotationDoc({ record }: { record: EventRecord }) {
               amount={quote.packageLine.amount}
             />
             {quote.addOnLines.map((l, i) => (
-              <PriceRow key={i} label={l.label} detail={l.detail} amount={l.amount} />
+              <PriceRow
+                key={i}
+                label={l.label}
+                detail={l.detail}
+                amount={l.amount}
+              />
             ))}
+            {quote.transportationFee > 0 && (
+              <PriceRow
+                label="Transportation Fee"
+                detail="Delivery & logistics"
+                amount={quote.transportationFee}
+              />
+            )}
           </tbody>
         </table>
 
@@ -272,6 +402,9 @@ function QuotationDoc({ record }: { record: EventRecord }) {
             value={quote.serviceCharge}
           />
           <Total label={`VAT (${Math.round(VAT_RATE * 100)}%)`} value={quote.vat} />
+          {quote.discount > 0 && (
+            <Total label="Discount" value={-quote.discount} />
+          )}
           <div className="flex items-center justify-between border-t pt-3">
             <span className="text-base font-semibold">Total Amount</span>
             <span className="text-xl font-semibold text-primary">
@@ -288,7 +421,9 @@ function QuotationDoc({ record }: { record: EventRecord }) {
         <>
           <Separator />
           <div className="py-6">
-            <div className="mb-2 text-sm font-semibold">Notes & Special Requests</div>
+            <div className="mb-2 text-sm font-semibold">
+              Notes & Special Requests
+            </div>
             <p className="whitespace-pre-line text-sm text-muted-foreground">
               {record.commercial.specialRequests}
             </p>
@@ -343,7 +478,10 @@ function ContractDoc({ record }: { record: EventRecord }) {
   const balance = quote.total - record.reservationFee;
   return (
     <DocShell>
-      <Letterhead docTitle="Catering Contract" docNo={`CTR-${record.id.slice(-6).toUpperCase()}`} />
+      <Letterhead
+        docTitle="Catering Contract"
+        docNo={`CTR-${record.id.slice(-6).toUpperCase()}`}
+      />
 
       <p className="py-6 text-sm leading-relaxed text-muted-foreground">
         This Catering Service Agreement is entered into between{" "}
@@ -430,7 +568,10 @@ function ContractDoc({ record }: { record: EventRecord }) {
 
       <div className="mt-10 grid gap-10 sm:grid-cols-2">
         <Signature label="Client" name={record.client.contactPerson} />
-        <Signature label="Authorized Representative, CaterOS Catering" name="" />
+        <Signature
+          label="Authorized Representative, CaterOS Catering"
+          name=""
+        />
       </div>
     </DocShell>
   );
@@ -469,7 +610,7 @@ function Signature({ label, name }: { label: string; name: string }) {
   return (
     <div>
       <div className="mb-1 h-10 border-b border-dashed" />
-      <div className="text-sm font-medium">{name || " "}</div>
+      <div className="text-sm font-medium">{name || " "}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
@@ -481,7 +622,10 @@ function EventOrderDoc({ record }: { record: EventRecord }) {
   const o = record.order;
   return (
     <DocShell>
-      <Letterhead docTitle="Event Order" docNo={`EO-${record.id.slice(-6).toUpperCase()}`} />
+      <Letterhead
+        docTitle="Event Order"
+        docNo={`EO-${record.id.slice(-6).toUpperCase()}`}
+      />
 
       <div className="grid gap-8 py-6 sm:grid-cols-2">
         <InfoBlock
@@ -514,7 +658,7 @@ function EventOrderDoc({ record }: { record: EventRecord }) {
         <div className="grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
           {record.commercial.menu.map((m, i) => (
             <div key={i} className="flex gap-2 text-sm">
-              <span className="w-20 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
+              <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
                 {m.category}
               </span>
               <span>{m.name}</span>

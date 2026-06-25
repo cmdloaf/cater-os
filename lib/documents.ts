@@ -1,4 +1,4 @@
-import type { EventRecord } from "./types";
+import type { EventRecord, OperationsChecklist, OpsItem } from "./types";
 import { deriveQuote } from "./pricing";
 
 /**
@@ -85,4 +85,52 @@ export function deriveOperations(record: EventRecord): OperationsPlan {
 /** Convenience: total amount for an event (used on dashboard + cards). */
 export function eventTotal(record: EventRecord): number {
   return deriveQuote(record).total;
+}
+
+let opsSeq = 0;
+function opsItem(label: string, meta?: string): OpsItem {
+  opsSeq += 1;
+  return { id: `ops-${Date.now().toString(36)}-${opsSeq}`, label, meta, done: false };
+}
+
+/**
+ * Build the initial editable checklist from the Event Record. Used to seed
+ * `record.operations` the first time the Checklist tab is touched, and by the
+ * "Reset" action to regenerate the auto-derived version.
+ */
+export function seedOperations(record: EventRecord): OperationsChecklist {
+  const plan = deriveOperations(record);
+  const { eventTime } = record.event;
+  const { ingress, egress } = record.order;
+
+  const timeline: OpsItem[] = [
+    opsItem("Ingress", ingress || "3 hrs before call time"),
+    opsItem("Setup Complete", "2 hrs before call time"),
+    opsItem("Guests Arrive", eventTime || "On call time"),
+    opsItem("Service Starts", eventTime || "On call time"),
+    opsItem("Egress", egress || "1 hr after program"),
+  ];
+
+  const foodPrep: OpsItem[] = record.commercial.menu.map((m) =>
+    opsItem(`Prepare ${m.name}`)
+  );
+
+  const equipment: OpsItem[] = plan.checklist.map((c) =>
+    opsItem(c.label, c.qty)
+  );
+
+  const addons: OpsItem[] = record.commercial.addOns.map((a) =>
+    opsItem(a.name)
+  );
+
+  const logistics: OpsItem[] = [
+    opsItem("Confirm Parking Slot"),
+    opsItem("Loading / Unloading Area"),
+    opsItem("Power Source / Outlets"),
+    opsItem("Water Source"),
+    opsItem("Stage Access"),
+    opsItem("Ingress Schedule", ingress || "Day before"),
+  ];
+
+  return { timeline, foodPrep, equipment, addons, logistics, notes: "" };
 }

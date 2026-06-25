@@ -64,6 +64,10 @@ export interface Commercial {
   budgetPerHead: number;
   menu: MenuItem[];
   addOns: AddOn[];
+  /** Flat delivery / logistics fee added to the subtotal. */
+  transportationFee: number;
+  /** Flat discount subtracted from the grand total. */
+  discount: number;
   specialRequests: string;
 }
 
@@ -75,6 +79,24 @@ export interface EventOrderDetails {
   egress: string; // pack-up / load-out
   operationalNotes: string;
   staffNotes: string;
+}
+
+/** A single editable checklist line. `meta` holds a quantity or a time. */
+export interface OpsItem {
+  id: string;
+  label: string;
+  meta?: string;
+  done: boolean;
+}
+
+/** Editable, persisted operations checklist for an event. */
+export interface OperationsChecklist {
+  timeline: OpsItem[];
+  foodPrep: OpsItem[];
+  equipment: OpsItem[];
+  addons: OpsItem[];
+  logistics: OpsItem[];
+  notes: string;
 }
 
 export interface EventRecord {
@@ -89,6 +111,8 @@ export interface EventRecord {
   order: EventOrderDetails;
   /** Reservation / down payment to confirm the booking. */
   reservationFee: number;
+  /** Lazily seeded the first time the Checklist tab is edited. */
+  operations?: OperationsChecklist;
 }
 
 /** Shape used by the create-event wizard before an id/timestamps exist. */
@@ -104,6 +128,8 @@ export interface DashboardStats {
   pendingQuotations: number;
   confirmed: number;
   totalEvents: number;
+  draft: number;
+  completed: number;
 }
 
 export type DocumentType =

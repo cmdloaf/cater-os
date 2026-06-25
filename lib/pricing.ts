@@ -13,9 +13,12 @@ export interface QuoteLine {
 export interface Quote {
   packageLine: QuoteLine;
   addOnLines: QuoteLine[];
+  addOnsTotal: number;
+  transportationFee: number;
   subtotal: number;
   serviceCharge: number;
   vat: number;
+  discount: number;
   total: number;
   perHead: number;
 }
@@ -29,7 +32,13 @@ export interface Quote {
  */
 export function deriveQuote(record: EventRecord): Quote {
   const { pax } = record.event;
-  const { budgetPerHead, packageName, addOns } = record.commercial;
+  const {
+    budgetPerHead,
+    packageName,
+    addOns,
+    transportationFee = 0,
+    discount = 0,
+  } = record.commercial;
 
   const packageAmount = budgetPerHead * pax;
   const packageLine: QuoteLine = {
@@ -44,18 +53,21 @@ export function deriveQuote(record: EventRecord): Quote {
     amount: a.price,
   }));
 
-  const subtotal =
-    packageAmount + addOns.reduce((sum, a) => sum + a.price, 0);
+  const addOnsTotal = addOns.reduce((sum, a) => sum + a.price, 0);
+  const subtotal = packageAmount + addOnsTotal + transportationFee;
   const serviceCharge = subtotal * SERVICE_CHARGE_RATE;
   const vat = (subtotal + serviceCharge) * VAT_RATE;
-  const total = subtotal + serviceCharge + vat;
+  const total = subtotal + serviceCharge + vat - discount;
 
   return {
     packageLine,
     addOnLines,
+    addOnsTotal,
+    transportationFee,
     subtotal,
     serviceCharge,
     vat,
+    discount,
     total,
     perHead: pax > 0 ? total / pax : 0,
   };
