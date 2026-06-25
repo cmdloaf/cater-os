@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText,
   FileSignature,
@@ -45,10 +45,24 @@ const DOC_TYPES: DocumentType[] = [
 ];
 
 export default function DocumentsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DocumentsView />
+    </Suspense>
+  );
+}
+
+function DocumentsView() {
   const router = useRouter();
+  const params = useSearchParams();
   const { events } = useStore();
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<DocumentType | "all">("all");
+  const initialType = params.get("type");
+  const [filter, setFilter] = useState<DocumentType | "all">(
+    initialType && DOC_TYPES.includes(initialType as DocumentType)
+      ? (initialType as DocumentType)
+      : "all"
+  );
 
   const rows = useMemo(() => {
     const all = events.flatMap((e) =>
@@ -104,58 +118,97 @@ export default function DocumentsPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Document</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Event</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Event Date</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => {
-              const meta = DOC_META[r.type];
-              const Icon = meta.icon;
-              return (
-                <TableRow
-                  key={r.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/events/view?id=${r.eventId}`)}
+        {/* Mobile: stacked cards */}
+        <div className="divide-y lg:hidden">
+          {rows.map((r) => {
+            const meta = DOC_META[r.type];
+            const Icon = meta.icon;
+            return (
+              <button
+                key={r.id}
+                onClick={() => router.push(`/events/view?id=${r.eventId}`)}
+                className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-muted/50"
+              >
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+                    meta.accent
+                  )}
                 >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-md",
-                          meta.accent
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{r.eventName}</div>
+                  <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {r.type} · {r.docNo} · {formatDate(r.date)}
+                  </div>
+                </div>
+                <StatusBadge status={r.status} />
+              </button>
+            );
+          })}
+          {rows.length === 0 && (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No documents match your filters.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden lg:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Document</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Event Date</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => {
+                const meta = DOC_META[r.type];
+                const Icon = meta.icon;
+                return (
+                  <TableRow
+                    key={r.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/events/view?id=${r.eventId}`)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-md",
+                            meta.accent
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="font-medium tabular-nums">
+                          {r.docNo}
+                        </span>
                       </div>
-                      <span className="font-medium tabular-nums">
-                        {r.docNo}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.type}
-                  </TableCell>
-                  <TableCell className="font-medium">{r.eventName}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.client}
-                  </TableCell>
-                  <TableCell>{formatDate(r.date)}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={r.status} />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.type}
+                    </TableCell>
+                    <TableCell className="font-medium">{r.eventName}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.client}
+                    </TableCell>
+                    <TableCell>{formatDate(r.date)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={r.status} />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
     </div>
   );

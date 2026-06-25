@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, Search, ChevronDown, Plus } from "lucide-react";
+import { Bell, Search, ChevronDown, Plus, ChefHat } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,8 +54,17 @@ export function Topbar() {
       : [];
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-white/80 px-4 backdrop-blur lg:px-8">
-      <div className="relative w-full max-w-md">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-white/80 px-4 backdrop-blur lg:gap-4 lg:px-8">
+      {/* Logo on mobile (sidebar is hidden below lg) */}
+      <Link
+        href="/dashboard"
+        aria-label="Vero home"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden"
+      >
+        <ChefHat className="h-5 w-5" />
+      </Link>
+
+      <div className="relative min-w-0 flex-1 lg:max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
@@ -99,7 +108,7 @@ export function Topbar() {
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-white" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {NOTIFICATIONS.map((n) => (

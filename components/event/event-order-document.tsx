@@ -54,7 +54,7 @@ export function EventOrderDocument({ record }: { record: EventRecord }) {
         </Button>
       </div>
 
-      <div className="print-area mx-auto max-w-3xl border bg-white p-8 text-sm text-zinc-800 shadow-sm sm:p-10">
+      <div className="print-area mx-auto max-w-3xl border bg-white p-4 text-sm text-zinc-800 shadow-sm sm:p-8 lg:p-10">
         {/* Title */}
         <div className="text-center font-serif text-2xl font-semibold tracking-[0.15em] text-zinc-900">
           {doc.title}

@@ -221,7 +221,7 @@ export function FieldTable({
   return (
     <div className="space-y-1">
       {fields.map((f) => (
-        <div key={f.id} className="group grid grid-cols-[13rem_auto_1fr] items-baseline gap-2">
+        <div key={f.id} className="group grid grid-cols-[7rem_auto_1fr] items-baseline gap-2 sm:grid-cols-[13rem_auto_1fr]">
           <EditableText
             value={f.label}
             onChange={(v) => onChange(patch(f.id, { label: v }))}

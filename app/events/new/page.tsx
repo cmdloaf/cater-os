@@ -287,7 +287,8 @@ export default function CreateEventPage() {
                 </div>
                 <span
                   className={cn(
-                    "text-sm font-medium",
+                    "whitespace-nowrap text-sm font-medium sm:inline",
+                    active ? "inline" : "hidden",
                     active || done ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
@@ -297,7 +298,7 @@ export default function CreateEventPage() {
               {i < STEPS.length - 1 && (
                 <div
                   className={cn(
-                    "h-px w-8 sm:w-16",
+                    "h-px w-5 sm:w-16",
                     step > s.n ? "bg-primary" : "bg-zinc-200"
                   )}
                 />

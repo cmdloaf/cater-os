@@ -71,6 +71,15 @@
   }
 }
 
+/* Hide scrollbars while keeping scroll (mobile tab strip, bottom-sheet lists) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Subtle grid background used on empty / hero surfaces */
 .bg-grid {
   background-image: linear-gradient(

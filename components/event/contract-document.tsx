@@ -55,7 +55,7 @@ export function ContractDocument({ record }: { record: EventRecord }) {
         </Button>
       </div>
 
-      <div className="print-area mx-auto max-w-3xl border bg-white p-8 text-sm text-zinc-800 shadow-sm sm:p-10">
+      <div className="print-area mx-auto max-w-3xl border bg-white p-4 text-sm text-zinc-800 shadow-sm sm:p-8 lg:p-10">
         {/* Title */}
         <div className="text-center font-serif text-2xl font-semibold tracking-[0.15em] text-zinc-900">
           {doc.title}
@@ -209,28 +209,32 @@ export function ContractDocument({ record }: { record: EventRecord }) {
         {/* Payment schedule */}
         <SectionTitle>Payment Schedule</SectionTitle>
         <div className="py-4">
-          <div className="grid grid-cols-[1fr_10rem_8rem] gap-2 border-b pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="flex items-center justify-between gap-2 border-b pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             <span>Payment Terms</span>
-            <span>Due Date</span>
-            <span className="text-right">Amount</span>
+            <span>Amount</span>
           </div>
           {doc.paymentSchedule.map((p) => (
-            <div key={p.id} className="group grid grid-cols-[1fr_10rem_8rem] items-center gap-2 py-1.5">
-              <EditableText
-                value={p.description}
-                onChange={(v) => update({ ...doc, paymentSchedule: doc.paymentSchedule.map((x) => (x.id === p.id ? { ...x, description: v } : x)) })}
-                onBlur={persist}
-              />
-              <EditableText
-                value={p.detail ?? ""}
-                onChange={(v) => update({ ...doc, paymentSchedule: doc.paymentSchedule.map((x) => (x.id === p.id ? { ...x, detail: v } : x)) })}
-                onBlur={persist}
-                className="text-muted-foreground"
-              />
-              <div className="flex items-center justify-end gap-1">
+            <div key={p.id} className="group flex items-start justify-between gap-2 py-1.5">
+              <div className="min-w-0 flex-1">
+                <EditableText
+                  value={p.description}
+                  onChange={(v) => update({ ...doc, paymentSchedule: doc.paymentSchedule.map((x) => (x.id === p.id ? { ...x, description: v } : x)) })}
+                  onBlur={persist}
+                  className="font-medium"
+                />
+                <EditableText
+                  value={p.detail ?? ""}
+                  onChange={(v) => update({ ...doc, paymentSchedule: doc.paymentSchedule.map((x) => (x.id === p.id ? { ...x, detail: v } : x)) })}
+                  onBlur={persist}
+                  placeholder="Due date"
+                  className="text-xs text-muted-foreground"
+                />
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
                 <EditableMoney
                   value={p.amount}
                   onCommit={(n) => commit({ ...doc, paymentSchedule: doc.paymentSchedule.map((x) => (x.id === p.id ? { ...x, amount: n } : x)) })}
+                  className="w-24"
                 />
                 <button
                   type="button"

@@ -136,7 +136,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {STAT_META.map((s) => {
           const Icon = s.icon;
           return (
@@ -176,7 +176,7 @@ export default function DashboardPage() {
               className="w-full sm:w-56"
             />
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -191,57 +191,85 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Event Name</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Pax</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((e) => (
-              <TableRow
-                key={e.id}
-                className="cursor-pointer"
-                onClick={() => router.push(`/events/view?id=${e.id}`)}
-              >
-                <TableCell className="font-medium">{e.eventName}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {e.client.clientName}
-                </TableCell>
-                <TableCell>{formatDate(e.event.eventDate)}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  <span className="inline-flex items-center gap-1 text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" />
-                    {e.event.pax}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={e.status} />
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        {/* Mobile: stacked cards */}
+        <div className="divide-y lg:hidden">
+          {filtered.map((e) => (
+            <button
+              key={e.id}
+              onClick={() => router.push(`/events/view?id=${e.id}`)}
+              className="flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-muted/50"
+            >
+              <div className="min-w-0">
+                <div className="truncate font-medium">{e.eventName}</div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {e.client.clientName} · {formatDate(e.event.eventDate)} ·{" "}
+                  {e.event.pax} pax
+                </div>
+              </div>
+              <StatusBadge status={e.status} />
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No events match your filters.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden lg:block">
+          <Table>
+            <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={5}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No events match your filters.
-                </TableCell>
+                <TableHead>Event Name</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Pax</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((e) => (
+                <TableRow
+                  key={e.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/events/view?id=${e.id}`)}
+                >
+                  <TableCell className="font-medium">{e.eventName}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {e.client.clientName}
+                  </TableCell>
+                  <TableCell>{formatDate(e.event.eventDate)}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      {e.event.pax}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={e.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell
+                    colSpan={5}
+                    className="py-12 text-center text-sm text-muted-foreground"
+                  >
+                    No events match your filters.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {/* Quick actions */}
       <div>
         <h2 className="mb-3 text-base font-semibold">Quick Actions</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {QUICK_ACTIONS.map((a) => {
             const Icon = a.icon;
             return (

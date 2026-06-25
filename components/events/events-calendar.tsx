@@ -134,7 +134,7 @@ export function EventsCalendar() {
             <div
               key={i}
               className={cn(
-                "min-h-[104px] border-b border-r p-1.5 [&:nth-child(7n)]:border-r-0",
+                "min-h-[76px] border-b border-r p-1 sm:min-h-[104px] sm:p-1.5 [&:nth-child(7n)]:border-r-0",
                 !inMonth && "bg-muted/20"
               )}
             >

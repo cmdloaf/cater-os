@@ -146,9 +146,9 @@ function EventRecordView() {
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="no-print flex-wrap">
+        <TabsList className="no-scrollbar no-print w-full justify-start overflow-x-auto lg:flex-wrap">
           {TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value}>
+            <TabsTrigger key={t.value} value={t.value} className="shrink-0">
               {t.label}
             </TabsTrigger>
           ))}

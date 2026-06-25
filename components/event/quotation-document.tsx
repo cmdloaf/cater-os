@@ -68,12 +68,12 @@ export function QuotationDocument({ record }: { record: EventRecord }) {
         </Button>
       </div>
 
-      <div className="print-area mx-auto max-w-3xl border bg-white p-8 text-sm text-zinc-800 shadow-sm sm:p-10">
+      <div className="print-area mx-auto max-w-3xl border bg-white p-4 text-sm text-zinc-800 shadow-sm sm:p-8 lg:p-10">
       {/* Header */}
-      <div className="flex items-start justify-between gap-6 border-b pb-6">
+      <div className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-primary/60 text-primary">
-            <ChefHat className="h-7 w-7" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-primary/60 text-primary sm:h-14 sm:w-14">
+            <ChefHat className="h-6 w-6 sm:h-7 sm:w-7" />
           </div>
           <div className="min-w-0">
             <EditableText
@@ -90,7 +90,7 @@ export function QuotationDocument({ record }: { record: EventRecord }) {
             />
           </div>
         </div>
-        <div className="font-serif text-3xl font-semibold tracking-[0.15em] text-zinc-900">
+        <div className="font-serif text-2xl font-semibold tracking-[0.15em] text-zinc-900 sm:text-3xl">
           QUOTATION
         </div>
       </div>

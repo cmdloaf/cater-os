@@ -256,7 +256,7 @@ function EventForm({ draft, setDraft }: FormProps) {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <FieldLabel>Event Date</FieldLabel>
           <Input type="date" value={ev.eventDate} onChange={(e) => upd({ eventDate: e.target.value })} />
@@ -532,7 +532,7 @@ function OrderForm({ draft, setDraft }: FormProps) {
         <FieldLabel>Setup Requirements</FieldLabel>
         <Textarea rows={3} value={o.setupRequirements} onChange={(e) => upd({ setupRequirements: e.target.value })} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <FieldLabel>Ingress</FieldLabel>
           <Input value={o.ingress} onChange={(e) => upd({ ingress: e.target.value })} />
