@@ -46,26 +46,24 @@ export function Sidebar() {
       onPointerEnter={() => collapsed && setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       className={cn(
-        "fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden border-r bg-white transition-[width] duration-200 lg:flex",
+        "fixed inset-y-0 left-0 z-30 hidden flex-col overflow-hidden border-r border-white/10 bg-[#13231a] text-white transition-[width] duration-200 lg:flex",
         expanded ? "w-60" : "w-16"
       )}
     >
-      <div className="flex h-16 items-center gap-2.5 border-b px-4">
+      <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-4">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <ChefHat className="h-5 w-5" />
         </div>
         <div className={cn("leading-tight", labelClass)}>
           <div className="text-sm font-semibold tracking-tight">CaterOS</div>
-          <div className="text-[11px] text-muted-foreground">
-            Catering Operations
-          </div>
+          <div className="text-[11px] text-white/50">Catering Operations</div>
         </div>
         <button
           type="button"
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cn(
-            "ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            "ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white",
             !expanded && "opacity-0"
           )}
         >
@@ -92,8 +90,8 @@ export function Sidebar() {
               className={cn(
                 "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-white/10 text-white"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
               )}
             >
               {active && (
@@ -106,18 +104,18 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-3">
+      <div className="border-t border-white/10 p-3">
         <Link
           href="/settings"
           title="Gian Matthew"
-          className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
+          className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-white/10"
         >
           <Avatar className="h-9 w-9 shrink-0">
-            <AvatarFallback>GM</AvatarFallback>
+            <AvatarFallback className="bg-white/10 text-white">GM</AvatarFallback>
           </Avatar>
           <div className={cn("leading-tight", labelClass)}>
             <div className="text-sm font-medium">Gian Matthew</div>
-            <div className="text-[11px] text-muted-foreground">Admin</div>
+            <div className="text-[11px] text-white/50">Admin</div>
           </div>
         </Link>
       </div>
