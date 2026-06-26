@@ -307,18 +307,16 @@ export default function CreateEventPage() {
             <VariantButton
               active={variant === "guided"}
               onClick={() => chooseVariant("guided")}
-              label="Guided"
+              label="Flow A"
             />
             <VariantButton
               active={variant === "express"}
               onClick={() => chooseVariant("express")}
-              label="Express"
+              label="Flow B"
             />
           </div>
           <p className="mt-1 text-right text-[11px] text-muted-foreground">
-            {variant === "express"
-              ? "Info & catering on one screen"
-              : "Step-by-step (3 steps)"}
+            Try both and keep your preferred one.
           </p>
         </div>
       </div>
