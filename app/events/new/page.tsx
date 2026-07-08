@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -40,19 +40,11 @@ import type { AddOn, MenuItem, NewEventInput } from "@/lib/types";
 import { cn, formatCurrency } from "@/lib/utils";
 import { SERVICE_CHARGE_RATE, VAT_RATE } from "@/lib/pricing";
 
-type Variant = "guided" | "express";
-
-const GUIDED_STEPS = [
+const STEPS = [
   { n: 1, label: "Event Info" },
   { n: 2, label: "Catering Details" },
   { n: 3, label: "Review & Save" },
 ];
-const EXPRESS_STEPS = [
-  { n: 1, label: "Event & Catering" },
-  { n: 2, label: "Review & Save" },
-];
-
-const VARIANT_KEY = "vero:wizard-variant";
 
 /** Time options in 30-minute increments, e.g. "12:00 AM" … "11:30 PM". */
 const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
@@ -116,40 +108,24 @@ const INITIAL: FormState = {
   specialRequests: "",
 };
 
-export default function CreateEventPage() {
+function CreateEventForm() {
   const router = useRouter();
+  const params = useSearchParams();
   const { createEvent } = useStore();
   const { packages, addOns: addOnCatalog } = useCatalog();
-  const [variant, setVariant] = useState<Variant>("guided");
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
-  // Remember the chosen flow per browser.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(VARIANT_KEY) === "express") {
-      setVariant("express");
-    }
-  }, []);
-
-  function chooseVariant(v: Variant) {
-    setVariant(v);
-    setStep(1);
-    try {
-      window.localStorage.setItem(VARIANT_KEY, v);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  const steps = variant === "express" ? EXPRESS_STEPS : GUIDED_STEPS;
+  const steps = STEPS;
   const reviewStep = steps.length;
   const showInfo = step === 1;
-  const showCatering = variant === "express" ? step === 1 : step === 2;
+  const showCatering = step === 2;
   const showReview = step === reviewStep;
   const [form, setForm] = useState<FormState>(() => ({
     ...INITIAL,
     packageName: "",
+    eventDate: params.get("date") ?? INITIAL.eventDate,
+    eventTime: params.get("time") ?? INITIAL.eventTime,
   }));
 
   // Default to the first package once the catalog is available.
@@ -282,43 +258,22 @@ export default function CreateEventPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to events
-          </Link>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-            Create New Event
-          </h1>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Enter details once — Vero generates the quotation, contract, event
-            order & operations checklist.
-          </p>
-        </div>
-
-        {/* Flow variant toggle */}
-        <div className="shrink-0">
-          <div className="inline-flex overflow-hidden rounded-md border">
-            <VariantButton
-              active={variant === "guided"}
-              onClick={() => chooseVariant("guided")}
-              label="Flow A"
-            />
-            <VariantButton
-              active={variant === "express"}
-              onClick={() => chooseVariant("express")}
-              label="Flow B"
-            />
-          </div>
-          <p className="mt-1 text-right text-[11px] text-muted-foreground">
-            Try both and keep your preferred one.
-          </p>
-        </div>
+      <div>
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to events
+        </Link>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+          Create New Event
+        </h1>
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Enter details once — Vero generates the quotation, contract, event
+          order & operations checklist.
+        </p>
       </div>
 
       {/* Stepper */}
@@ -362,7 +317,7 @@ export default function CreateEventPage() {
         })}
       </div>
 
-      {/* Event Info — step 1 in both variants */}
+      {/* Event Info — step 1 */}
       {showInfo && (
         <div className="space-y-6">
           <Card className="p-6">
@@ -495,7 +450,7 @@ export default function CreateEventPage() {
         </div>
       )}
 
-      {/* Catering Details — step 2 (guided) / part of step 1 (express) */}
+      {/* Catering Details — step 2 */}
       {showCatering && (
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
@@ -727,6 +682,14 @@ export default function CreateEventPage() {
   );
 }
 
+export default function CreateEventPage() {
+  return (
+    <Suspense fallback={null}>
+      <CreateEventForm />
+    </Suspense>
+  );
+}
+
 function PricingSummary({
   pricing,
   transportationFee,
@@ -928,31 +891,6 @@ function EditableLine({
         />
       </div>
     </div>
-  );
-}
-
-function VariantButton({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "px-3 py-1.5 text-sm font-medium transition-colors",
-        active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-muted"
-      )}
-    >
-      {label}
-    </button>
   );
 }
 

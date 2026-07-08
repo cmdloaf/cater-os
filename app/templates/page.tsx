@@ -14,14 +14,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface Template {
   name: string;
   type: string;
   desc: string;
   icon: typeof FileText;
-  accent: string;
   usage: number;
   default?: boolean;
 }
@@ -32,7 +30,6 @@ const TEMPLATES: Template[] = [
     type: "Quotation",
     desc: "Clean itemized quote with pricing breakdown, SC & VAT.",
     icon: FileText,
-    accent: "text-blue-600 bg-blue-50",
     usage: 124,
     default: true,
   },
@@ -41,7 +38,6 @@ const TEMPLATES: Template[] = [
     type: "Quotation",
     desc: "Styled quote for weddings & galas with menu photography.",
     icon: FileText,
-    accent: "text-blue-600 bg-blue-50",
     usage: 41,
   },
   {
@@ -49,7 +45,6 @@ const TEMPLATES: Template[] = [
     type: "Contract",
     desc: "Payment terms, reservation fee and standard T&Cs.",
     icon: FileSignature,
-    accent: "text-violet-600 bg-violet-50",
     usage: 98,
     default: true,
   },
@@ -58,7 +53,6 @@ const TEMPLATES: Template[] = [
     type: "Contract",
     desc: "PO-friendly terms with NET-30 billing clauses.",
     icon: FileSignature,
-    accent: "text-violet-600 bg-violet-50",
     usage: 33,
   },
   {
@@ -66,7 +60,6 @@ const TEMPLATES: Template[] = [
     type: "Event Order",
     desc: "Operational sheet: setup, ingress/egress, staff notes.",
     icon: ClipboardList,
-    accent: "text-amber-600 bg-amber-50",
     usage: 76,
     default: true,
   },
@@ -75,7 +68,6 @@ const TEMPLATES: Template[] = [
     type: "Operations",
     desc: "Equipment, staffing and timeline scaled by pax.",
     icon: ListChecks,
-    accent: "text-emerald-600 bg-emerald-50",
     usage: 76,
     default: true,
   },
@@ -104,12 +96,7 @@ export default function TemplatesPage() {
           return (
             <Card key={t.name} className="flex flex-col p-5">
               <div className="flex items-start justify-between">
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg",
-                    t.accent
-                  )}
-                >
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <Icon className="h-5 w-5" />
                 </div>
                 {t.default && (

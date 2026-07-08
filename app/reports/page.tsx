@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { useStore } from "@/lib/store";
 import { eventTotal } from "@/lib/documents";
 import { EVENT_STATUSES } from "@/lib/types";
-import { cn, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 export default function ReportsPage() {
   const { events, ready } = useStore();
@@ -42,19 +42,16 @@ export default function ReportsPage() {
       label: "Total Events",
       value: ready ? String(events.length) : "—",
       icon: CalendarRange,
-      accent: "text-zinc-600 bg-zinc-100",
     },
     {
       label: "Total Revenue",
       value: ready ? formatCurrency(data.revenue) : "—",
       icon: Wallet,
-      accent: "text-emerald-600 bg-emerald-50",
     },
     {
       label: "Guests Served",
       value: ready ? data.pax.toLocaleString() : "—",
       icon: Users,
-      accent: "text-blue-600 bg-blue-50",
     },
     {
       label: "Avg. Event Value",
@@ -63,7 +60,6 @@ export default function ReportsPage() {
           ? formatCurrency(data.revenue / events.length)
           : "—",
       icon: TrendingUp,
-      accent: "text-amber-600 bg-amber-50",
     },
   ];
 
@@ -90,12 +86,7 @@ export default function ReportsPage() {
                     {s.label}
                   </div>
                 </div>
-                <div
-                  className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg",
-                    s.accent
-                  )}
-                >
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   <Icon className="h-5 w-5" />
                 </div>
               </div>

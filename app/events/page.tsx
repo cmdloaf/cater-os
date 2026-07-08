@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { List, CalendarDays, Plus } from "lucide-react";
+import { List, CalendarDays, CalendarClock, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EventsList } from "@/components/events/events-list";
 import { EventsCalendar } from "@/components/events/events-calendar";
+import { EventsWeek } from "@/components/events/events-week";
 import { cn } from "@/lib/utils";
 
-type View = "list" | "calendar";
+type View = "list" | "calendar" | "week";
 
 export default function EventsPage() {
   const [view, setView] = useState<View>("list");
@@ -23,7 +24,9 @@ export default function EventsPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {view === "list"
               ? "All events in order of execution."
-              : "Your event schedule at a glance."}
+              : view === "week"
+                ? "Your schedule by day and time."
+                : "Your event schedule at a glance."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -36,10 +39,16 @@ export default function EventsPage() {
               label="List"
             />
             <ToggleButton
+              active={view === "week"}
+              onClick={() => setView("week")}
+              icon={CalendarClock}
+              label="Week"
+            />
+            <ToggleButton
               active={view === "calendar"}
               onClick={() => setView("calendar")}
               icon={CalendarDays}
-              label="Calendar"
+              label="Month"
             />
           </div>
           <Button asChild>
@@ -51,7 +60,13 @@ export default function EventsPage() {
         </div>
       </div>
 
-      {view === "list" ? <EventsList /> : <EventsCalendar />}
+      {view === "list" ? (
+        <EventsList />
+      ) : view === "week" ? (
+        <EventsWeek />
+      ) : (
+        <EventsCalendar />
+      )}
     </div>
   );
 }

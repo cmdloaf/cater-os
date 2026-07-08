@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, Search, ChevronDown, Plus, ChefHat } from "lucide-react";
+import { Bell, Search, ChevronDown, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { LogoMark } from "@/components/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,14 +55,14 @@ export function Topbar() {
       : [];
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-white/80 px-4 backdrop-blur lg:gap-4 lg:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-card/80 px-4 backdrop-blur lg:gap-4 lg:px-8">
       {/* Logo on mobile (sidebar is hidden below lg) */}
       <Link
         href="/dashboard"
         aria-label="Vero home"
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden"
       >
-        <ChefHat className="h-5 w-5" />
+        <LogoMark className="h-[18px] w-[18px]" />
       </Link>
 
       <div className="relative min-w-0 flex-1 lg:max-w-md">
@@ -69,9 +70,12 @@ export function Topbar() {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search events, clients…"
-          className="pl-9"
+          placeholder="Search events, clients, menus, packages…"
+          className="rounded-lg bg-muted/40 pl-9 pr-12"
         />
+        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border bg-card px-1.5 py-0.5 font-sans text-[10px] font-medium text-muted-foreground sm:block">
+          ⌘ K
+        </kbd>
         {results.length > 0 && (
           <div className="absolute left-0 right-0 top-11 z-30 overflow-hidden rounded-lg border bg-popover shadow-lg">
             {results.map((e) => (
@@ -94,7 +98,7 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button asChild size="sm" className="hidden sm:inline-flex">
+        <Button asChild className="hidden rounded-lg sm:inline-flex">
           <Link href="/events/new">
             <Plus className="h-4 w-4" />
             Create Event
@@ -105,7 +109,9 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-white" />
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-card">
+                {NOTIFICATIONS.length}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80">
@@ -132,7 +138,9 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-full p-1 pr-2 hover:bg-muted">
               <Avatar>
-                <AvatarFallback>GM</AvatarFallback>
+                <AvatarFallback className="bg-accent font-semibold text-primary">
+                  GM
+                </AvatarFallback>
               </Avatar>
               <div className="hidden text-left leading-tight md:block">
                 <div className="text-sm font-medium">Gian Matthew</div>

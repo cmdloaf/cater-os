@@ -203,38 +203,32 @@ export function OverviewTab({
       </div>
 
       {/* Document status */}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Document Status</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Card className="overflow-hidden">
+        <div className="border-b px-5 py-3">
+          <h3 className="text-sm font-semibold">Documents</h3>
+        </div>
+        <div className="divide-y">
           {DOCS.map((d) => {
             const Icon = d.icon;
             return (
-              <Card key={d.key} className="flex flex-col gap-3 p-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{d.label}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Ready to generate
-                    </div>
+              <button
+                key={d.key}
+                onClick={onOpenDocuments}
+                className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-muted/50"
+              >
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{d.label}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Ready to generate
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={onOpenDocuments}
-                >
-                  Generate
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Card>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
             );
           })}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

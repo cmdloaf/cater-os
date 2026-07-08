@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, PlusCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/empty-state";
 import { useCatalog } from "@/lib/catalog-store";
 import type { AddOn } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -110,11 +111,13 @@ export default function AddOnsPage() {
             ))}
             {addOns.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell
-                  colSpan={3}
-                  className="py-12 text-center text-sm text-muted-foreground"
-                >
-                  No add-ons yet.
+                <TableCell colSpan={3} className="p-0">
+                  <EmptyState
+                    icon={PlusCircle}
+                    title="No add-ons yet"
+                    description="Add-ons show up as selectable extras in the create-event wizard."
+                    action={{ label: "New Add-on", onClick: openNew }}
+                  />
                 </TableCell>
               </TableRow>
             )}

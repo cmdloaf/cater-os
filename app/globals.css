@@ -4,36 +4,53 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 10%;
+    /*
+     * Brand palette (Vero):
+     *   Primary    #1F5C4A  →  162 50% 24%
+     *   Secondary  #5DBB92  →  154 41% 55%  (--brand-mint — progress/success accents, never button fills)
+     *   Accent     #A7D7C1  →  153 38% 75%  (--brand-tint — small chips/dots; --accent below is a paler tint of it)
+     *   Background #F7FAF8  →  140 23% 97%
+     *   Surface    #FFFFFF
+     * Interface is ~90% neutral; green is reserved for primary actions, active states, progress and success.
+     */
+    --background: 140 23% 97%;
+    --foreground: 160 15% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card-foreground: 160 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover-foreground: 160 15% 12%;
 
-    /* Green accent */
-    --primary: 142 71% 35%;
+    --primary: 162 50% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 20%;
+    --secondary: 150 10% 95%;
+    --secondary-foreground: 160 15% 20%;
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 150 10% 95%;
+    --muted-foreground: 160 8% 45%;
 
-    --accent: 142 60% 95%;
-    --accent-foreground: 142 71% 25%;
+    --accent: 150 40% 93%;
+    --accent-foreground: 162 50% 20%;
+
+    --brand-mint: 154 41% 55%;
+    --brand-tint: 153 38% 75%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 142 71% 35%;
+    --border: 160 10% 89%;
+    --input: 160 10% 89%;
+    --ring: 162 50% 24%;
 
-    --radius: 0.65rem;
+    --radius: 0.5rem;
+
+    /* Dark forest end of the brand hue — sidebar only, not a general dark mode. */
+    --sidebar: 162 32% 11%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-border: 162 20% 20%;
+    --sidebar-accent: 162 25% 18%;
   }
 }
 
@@ -84,9 +101,9 @@
 .bg-grid {
   background-image: linear-gradient(
       to right,
-      hsl(240 6% 90% / 0.6) 1px,
+      hsl(160 10% 89% / 0.6) 1px,
       transparent 1px
     ),
-    linear-gradient(to bottom, hsl(240 6% 90% / 0.6) 1px, transparent 1px);
+    linear-gradient(to bottom, hsl(160 10% 89% / 0.6) 1px, transparent 1px);
   background-size: 22px 22px;
 }

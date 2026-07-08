@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { expanded } = useSidebar();
   return (
-    <div className="min-h-screen overflow-x-clip bg-zinc-50/50">
+    <div className="min-h-screen overflow-x-clip bg-background">
       <Sidebar />
       <div
         className={cn(
           "transition-[padding] duration-200",
-          expanded ? "lg:pl-60" : "lg:pl-16"
+          expanded ? "lg:pl-64" : "lg:pl-16"
         )}
       >
         <Topbar />

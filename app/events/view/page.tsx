@@ -25,7 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge, STATUS_DOT } from "@/components/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   OverviewTab,
   ClientTab,
@@ -37,7 +38,7 @@ import {
 import { DocumentsTab } from "@/components/event/documents-tab";
 import { useStore } from "@/lib/store";
 import { EVENT_STATUSES } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 const TABS = [
   { value: "overview", label: "Overview" },
@@ -62,11 +63,7 @@ function EventRecordView() {
   );
 
   if (!ready) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center text-sm text-muted-foreground">
-        Loading event…
-      </div>
-    );
+    return <EventWorkspaceSkeleton />;
   }
 
   if (!record) {
@@ -135,7 +132,9 @@ function EventRecordView() {
                 <DropdownMenuItem
                   key={s}
                   onClick={() => setStatus(record.id, s)}
+                  className="gap-2"
                 >
+                  <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[s])} />
                   {s}
                 </DropdownMenuItem>
               ))}
@@ -183,15 +182,30 @@ function EventRecordView() {
   );
 }
 
+function EventWorkspaceSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Skeleton className="h-4 w-28" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-64" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <Skeleton className="h-9 w-28" />
+      </div>
+      <Skeleton className="h-9 w-full max-w-xl" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
 export default function EventRecordPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-[50vh] items-center justify-center text-sm text-muted-foreground">
-          Loading event…
-        </div>
-      }
-    >
+    <Suspense fallback={<EventWorkspaceSkeleton />}>
       <EventRecordView />
     </Suspense>
   );

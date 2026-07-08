@@ -6,7 +6,9 @@ import { useMemo } from "react";
 import { CalendarDays, Users, MapPin, Pencil, ChevronRight } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/status-badge";
+import { EmptyState } from "@/components/empty-state";
 import { useStore } from "@/lib/store";
 import { eventTotal } from "@/lib/documents";
 import type { EventRecord } from "@/lib/types";
@@ -20,6 +22,7 @@ function dateKey(d: Date): string {
 }
 
 export function EventsList() {
+  const router = useRouter();
   const { events, ready } = useStore();
   const todayKey = dateKey(new Date());
 
@@ -35,16 +38,22 @@ export function EventsList() {
 
   if (!ready) {
     return (
-      <p className="text-center text-sm text-muted-foreground">
-        Loading events…
-      </p>
+      <div className="space-y-6">
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-40 rounded-xl" />
+      </div>
     );
   }
 
   if (events.length === 0) {
     return (
-      <Card className="p-12 text-center text-sm text-muted-foreground">
-        No events yet.
+      <Card>
+        <EmptyState
+          icon={CalendarDays}
+          title="No events yet"
+          description="Create your first event and Vero will generate the quotation, contract, event order and checklist for it."
+          action={{ label: "New Event", onClick: () => router.push("/events/new") }}
+        />
       </Card>
     );
   }

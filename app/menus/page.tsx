@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/empty-state";
 import { useCatalog } from "@/lib/catalog-store";
 import type { MenuSet } from "@/lib/catalog";
 import type { MenuItem } from "@/lib/types";
@@ -110,7 +111,13 @@ export default function MenusPage() {
           </Card>
         ))}
         {menuSets.length === 0 && (
-          <p className="text-sm text-muted-foreground">No menus yet.</p>
+          <EmptyState
+            icon={UtensilsCrossed}
+            title="No menus yet"
+            description="Build a menu set to reuse across events instead of re-entering dishes each time."
+            action={{ label: "New Menu", onClick: openNew }}
+            className="md:col-span-2"
+          />
         )}
       </div>
 

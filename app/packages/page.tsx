@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/empty-state";
 import { useCatalog } from "@/lib/catalog-store";
 import type { PackageOption } from "@/lib/catalog";
 import type { PackageTier } from "@/lib/types";
@@ -109,7 +110,13 @@ export default function PackagesPage() {
           </Card>
         ))}
         {packages.length === 0 && (
-          <p className="text-sm text-muted-foreground">No packages yet.</p>
+          <EmptyState
+            icon={Package}
+            title="No packages yet"
+            description="Create a package tier to offer clients during the create-event flow."
+            action={{ label: "New Package", onClick: openNew }}
+            className="col-span-full"
+          />
         )}
       </div>
 

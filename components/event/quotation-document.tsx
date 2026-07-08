@@ -2,7 +2,6 @@
 
 import { toast } from "sonner";
 import {
-  ChefHat,
   CalendarDays,
   Users,
   Clock,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/logo";
 import type { DocLine, EventRecord } from "@/lib/types";
 import { seedQuotation } from "@/lib/documents";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -73,7 +73,7 @@ export function QuotationDocument({ record }: { record: EventRecord }) {
       <div className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-primary/60 text-primary sm:h-14 sm:w-14">
-            <ChefHat className="h-6 w-6 sm:h-7 sm:w-7" />
+            <LogoMark className="h-6 w-6 sm:h-7 sm:w-7" />
           </div>
           <div className="min-w-0">
             <EditableText
