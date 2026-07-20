@@ -1,0 +1,19 @@
+# Runtime dependencies shared by every environment.
+# Versions are pinned to the minor line: patch upgrades come for free, minor
+# and major upgrades are a deliberate, reviewed change.
+
+Django==5.2.16
+djangorestframework==3.17.1
+django-environ==0.14.0
+django-cors-headers==4.9.0
+
+# Database
+psycopg[binary]==3.3.4
+
+# Background jobs
+celery==5.6.3
+redis==8.0.1
+
+# Object storage — Cloudflare R2 through the S3-compatible API
+django-storages==1.14.6
+boto3==1.43.51

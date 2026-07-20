@@ -1,0 +1,16 @@
+-r base.txt
+
+# Formatting and linting. Configured in pyproject.toml and wired into
+# .pre-commit-config.yaml at the repository root.
+ruff==0.15.22
+black==26.5.1
+
+# Testing
+pytest==9.1.1
+pytest-django==4.12.0
+pytest-cov==7.1.0
+factory-boy==3.3.3
+
+# Developer experience
+django-extensions==4.1
+ipython==9.15.0

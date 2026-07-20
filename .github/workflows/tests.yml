@@ -1,0 +1,83 @@
+# SCAFFOLD — intentionally incomplete.
+#
+# There are no tests yet. This exists so that the service containers and the
+# test command are already written down when the first test is added.
+
+name: Tests
+
+on:
+  workflow_dispatch:
+  # pull_request:
+  # push:
+  #   branches: [main]
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vero_test
+          POSTGRES_USER: vero
+          POSTGRES_PASSWORD: vero
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements/development.txt
+
+      # - name: pytest
+      #   env:
+      #     DJANGO_SETTINGS_MODULE: config.settings.development
+      #     SECRET_KEY: ci-only-not-a-real-secret
+      #     DATABASE_URL: postgres://vero:vero@localhost:5432/vero_test
+      #     REDIS_URL: redis://localhost:6379/0
+      #   run: pytest --cov=apps --cov-report=term-missing
+
+      - run: echo "No tests yet. Enable the pytest step above when they exist."
+
+  frontend:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # No frontend test runner is configured yet. Vitest + Testing Library is
+      # the likely choice.
+      - run: echo "No frontend tests yet."

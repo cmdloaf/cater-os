@@ -1,0 +1,63 @@
+# Pre-commit hooks for Vero.
+#
+# Nothing is installed yet. To enable:
+#   pipx install pre-commit   (or: brew install pre-commit)
+#   pre-commit install
+#   pre-commit run --all-files
+#
+# Python tool versions here should track backend/requirements/development.txt
+# so that local editor runs and hook runs cannot disagree about formatting.
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # --- General hygiene ----------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+
+  # --- Python -------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.22
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+        files: ^backend/
+
+  # --- Frontend -----------------------------------------------------------
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^(apps|shared)/.*\.(ts|tsx|js|jsx|mjs|json|css|md)$
+        exclude: ^apps/web/(\.next|out)/
+
+  # ESLint runs through the workspace so it picks up the Next.js config rather
+  # than a second, drifting copy of the rules.
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (apps/web)
+        entry: npm run lint --workspace vero-web --
+        language: system
+        pass_filenames: false
+        files: ^apps/web/.*\.(ts|tsx|js|jsx)$
