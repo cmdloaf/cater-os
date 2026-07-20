@@ -18,12 +18,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # The app lives in apps/web since the monorepo migration. npm ci and
-    # npm run build both run from there; npm resolves the workspace lockfile
-    # at the repository root on its own.
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,12 +28,21 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Install from the repository root. The lockfile is the workspace
+      # lockfile and lives there; running npm ci from apps/web relies on npm
+      # walking up to find it, which is not worth depending on in CI.
       - name: Install dependencies
         run: npm ci
 
+      # The root `build` script delegates to the vero-web workspace, so this
+      # also runs from the root and needs no working-directory.
       - name: Build static site
         # basePath is derived from the repo name so the app works under
         # https://<user>.github.io/<repo>/ automatically.
+        #
+        # NOTE: this value is baked into the export at build time. Renaming the
+        # repository invalidates every deployed asset URL and internal link
+        # until a rebuild runs — re-run this workflow after any rename.
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: npm run build
