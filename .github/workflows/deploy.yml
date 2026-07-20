@@ -1,4 +1,4 @@
-name: Deploy Vero to GitHub Pages
+name: Deploy CaterOS to GitHub Pages
 
 on:
   push:
@@ -28,31 +28,20 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Install from the repository root. The lockfile is the workspace
-      # lockfile and lives there; running npm ci from apps/web relies on npm
-      # walking up to find it, which is not worth depending on in CI.
       - name: Install dependencies
         run: npm ci
 
-      # The root `build` script delegates to the vero-web workspace, so this
-      # also runs from the root and needs no working-directory.
       - name: Build static site
         # basePath is derived from the repo name so the app works under
         # https://<user>.github.io/<repo>/ automatically.
-        #
-        # NOTE: this value is baked into the export at build time. Renaming the
-        # repository invalidates every deployed asset URL and internal link
-        # until a rebuild runs — re-run this workflow after any rename.
         env:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
-        # `with.path` is an action input, not a `run` step, so the job-level
-        # working-directory does not apply to it — it must be repo-relative.
         with:
-          path: apps/web/out
+          path: out
 
   deploy:
     needs: build
