@@ -140,11 +140,49 @@ client behaviour.
   event retains whichever stage it reached, because the cancellation terms
   usually depend on how far along it was.
 
+## Reconciling with the prototype's statuses
+
+The frontend currently has five statuses (`apps/web/lib/types.ts`):
+
+```
+Draft → Quotation Sent → Confirmed → Upcoming → Completed
+```
+
+These do not map cleanly onto the nine stages above, and one of them is a bug.
+
+**`Upcoming` is not a workflow stage.** It is a derived property — *confirmed,
+and the event date is in the future*. Storing it as state means it goes stale on
+its own: every confirmed event silently becomes wrong on the day it happens,
+with no user action and nothing to trigger a correction.
+
+**Resolution:** `status` holds workflow state only. `Upcoming` is computed from
+`status == Confirmed AND event_date >= today`. The UI can keep showing an
+"Upcoming" filter — it just stops being a stored value.
+
+The nine stages are the target model; the prototype's five are a subset that
+collapsed several of them. The mapping to implement:
+
+| Prototype | Lifecycle stage |
+| --- | --- |
+| — | Lead, Inquiry *(new — no prototype equivalent)* |
+| `Draft` | Inquiry |
+| `Quotation Sent` | Quotation, Negotiation |
+| `Confirmed` | Confirmed, Contract Signed |
+| `Upcoming` | *computed, not a stage* |
+| — | Operations Planning, Event Day *(new)* |
+| `Completed` | Completed |
+
 ## Open questions
 
 - Do quotation versions belong to the Event or to a Quotation with revisions?
 - Should Confirmed and Contract Signed collapse into one stage for businesses
-  that don't use formal contracts for small events?
+  that don't use formal contracts for small events? The prototype collapsed
+  them; whether that was deliberate or incidental is unknown.
 - Where do multi-day events and multi-session events (ceremony + reception) fit
-  — one Event or several linked ones? This one has significant schema
-  consequences and should be resolved before the Event model is written.
+  — one Event or several linked ones? This has significant schema consequences
+  and should be resolved before the Event model is written.
+
+## Related decisions
+
+- [ADR 0001](./decisions/0001-document-projection-model.md) — how documents
+  track the Event, and what happens at signature

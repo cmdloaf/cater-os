@@ -2,6 +2,7 @@
 
 | Area | Document | What it covers |
 | --- | --- | --- |
+| Architecture | [decisions/](./architecture/decisions/) | **ADRs — the expensive-to-reverse choices** |
 | Architecture | [system-design.md](./architecture/system-design.md) | Components, boundaries, request paths |
 | Architecture | [database.md](./architecture/database.md) | Schema and modelling decisions |
 | Architecture | [event-lifecycle.md](./architecture/event-lifecycle.md) | **The domain model. Start here.** |
